@@ -1,0 +1,40 @@
+{
+  "name": "Scalyr",
+  "id": "adknown-scalyr-datasource",
+  "type": "datasource",
+
+  "partials": {
+    "config": "public/app/plugins/datasource/simplejson/partials/config.html"
+  },
+
+  "metrics": true,
+  "annotations": true,
+
+  "info": {
+    "description": "datasource connecting Scalyr's api to Grafana",
+    "author": {
+      "name": "Matthew Jourard, Adknown Inc.",
+      "url": "https://adknown.com"
+    },
+    "logos": {
+      "small": "img/scalyr_logo.png",
+      "large": "img/scalyr_logo.png"
+    },
+    "keywords": [
+      "Scalyr",
+      "Adknown",
+      "datasource"
+    ],
+    "links": [
+      {"name": "GitHub", "url": "https://github.com/AdknownInc/grafana-scalyr-datasource-plugin"},
+      {"name": "MIT License", "url": "https://github.com/AdknownInc/grafana-scalyr-datasource-plugin/blob/master/LICENSE"}
+    ],
+    "version": "0.1.0",
+    "updated": "2018-08-16"
+  },
+
+  "dependencies": {
+    "grafanaVersion": "5.x.x",
+    "plugins": [ ]
+  }
+}

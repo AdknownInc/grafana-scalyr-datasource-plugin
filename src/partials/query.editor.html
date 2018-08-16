@@ -1,0 +1,109 @@
+<query-editor-row query-ctrl="ctrl" class="generic-datasource-query-row" has-text-edit-mode="true">
+    <div class="gf-form-inline">
+        <div class="gf-form max-width-12">
+            <select class="gf-form-input" ng-model="ctrl.target.type"
+                    ng-options="f as f for f in ctrl.queryTypes"></select>
+        </div>
+
+        <div class="gf-form" ng-if="ctrl.target.type != 'complex numeric query'">
+            <button class="btn btn-secondary gf-form-btn" ng-click="ctrl.openScalyrLogs()" >
+                Show Logs In Scalyr
+                <i class="fa fa-caret-right"></i>
+            </button>
+        </div>
+
+    </div>
+    <div class="gf-form-line">
+        <div class="gf-form">
+            <label class="gf-form-label width-10">Target</label>
+            <input class="input-small gf-form-input" type="text"
+                   ng-change="ctrl.onChangeInternal()"
+                   ng-placeholder="ctrl.target.placeholder"
+                   ng-model="ctrl.target.target">
+        </div>
+    </div>
+    <div ng-if="ctrl.target.type == 'numeric query'">
+        <div class="gf-form-inline">
+            <div class="gf-form gf-form--grow">
+                <label class="gf-form-label width-10">Filter</label>
+                <input class="input-small gf-form-input gf-form--grow" type="text"
+                       ng-change="ctrl.onChangeInternal()"
+                       ng-model="ctrl.target.filter">
+                </input>
+            </div>
+        </div>
+        <div class="gf-form-inline">
+            <div class="gf-form">
+                <label class="gf-form-label width-10">Graph Function</label>
+                <select class="gf-form-input" ng-model="ctrl.target.graphFunction" ng-change="ctrl.onChangeInternal()"
+                        ng-options="f as f for f in ctrl.graphFunctions"></select>
+            </div>
+            <div ng-if="ctrl.target.graphFunction != '' && ctrl.target.graphFunction != 'count' && ctrl.target.graphFunction != 'rate'">
+
+                <div class="gf-form">
+                    <label class="gf-form-label width-10">Expression</label>
+                    <input class="input-small gf-form-input width-10" type="text"
+                           ng-change="ctrl.onChangeInternal()"
+                           ng-model="ctrl.target.expression">
+                </div>
+            </div>
+        </div>
+        <div class="gf-form-inline">
+            <div class="gf-form">
+                <label class="gf-form-label width-10">Interval (seconds)</label>
+                <input class="input-small gf-form-input width-10" type="number"
+                       ng-change="ctrl.onChangeInternal()"
+                       ng-model="ctrl.target.secondsInterval">
+            </div>
+        </div>
+    </div>
+
+    <div ng-if="ctrl.target.type == 'facet query'">
+        <div class="gf-form-inline">
+            <div class="gf-form gf-form--grow">
+                <label class="gf-form-label width-10">Filter</label>
+                <code-editor content="ctrl.target.filter" datasource="ctrl.datasource"
+                             ng-blur="ctrl.onChangeInternal()"
+                             data-mode="text">
+                </code-editor>
+            </div>
+        </div>
+        <div class="gf-form-inline">
+            <div class="gf-form">
+                <label class="gf-form-label width-10">Field</label>
+                <input class="input-small gf-form-input width-10" type="text"
+                       ng-change="ctrl.onChangeInternal()"
+                       ng-model="ctrl.target.field">
+            </div>
+        </div>
+        <div class="gf-form-inline">
+            <div class="gf-form">
+                <label class="gf-form-label width-10">Max Count</label>
+                <input class="input-small gf-form-input width-10" type="number"
+                       ng-change="ctrl.onChangeInternal()"
+                       ng-model="ctrl.target.maxCount">
+            </div>
+        </div>
+    </div>
+
+    <div ng-if="ctrl.target.type == 'complex numeric query'">
+        <div class="gf-form-inline">
+            <div class="gf-form gf-form--grow">
+                <label class="gf-form-label width-10">Filter</label>
+                <input class="input-small gf-form-input gf-form--grow" type="text"
+                       ng-change="ctrl.onChangeInternal()"
+                       ng-model="ctrl.target.filter">
+                </input>
+            </div>
+        </div>
+        <div class="gf-form-inline">
+            <div class="gf-form">
+                <label class="gf-form-label width-10">Interval (seconds)</label>
+                <input class="input-small gf-form-input width-10" type="number"
+                       ng-change="ctrl.onChangeInternal()"
+                       ng-model="ctrl.target.secondsInterval">
+            </div>
+        </div>
+    </div>
+
+</query-editor-row>
