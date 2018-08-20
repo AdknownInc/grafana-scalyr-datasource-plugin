@@ -75,7 +75,7 @@ export class GenericDatasourceQueryCtrl extends QueryCtrl {
             //convert filter to the scalyr logs page
             /**
              * Example
-             * https://www.scalyr.com/events?barWidth=30%20minutes&severity=0&filter=$serverHost%3D%27app001%27&teamToken=aasdfasdfasdfasdf--&startTime=1519121858224&endTime=1519136228224
+             * https://www.scalyr.com/events?barWidth=30%20minutes&severity=0&filter=$serverHost%3D%27app001%27&startTime=1519121858224&endTime=1519136228224
              */
             let filter = this.target.filter;
             filter = filter.replace(" = ", "=");
@@ -83,15 +83,9 @@ export class GenericDatasourceQueryCtrl extends QueryCtrl {
 
             let timeFrame = this.getTargetTimeframe(this.target.target);
 
-
-            /**
-             *  teamToken is hardcoded as we only have 1 team at the moment and I didn't want to bother with a smart way of retrieving it.
-             *  Also couldn't see how to retrieve it
-             */
             let queryParams = {
                 severity: 0,
-                filter: filter,
-                teamToken: 'aasdfasdfasdfasdf--'
+                filter: filter
             };
 
             queryParams = Object.assign(queryParams, timeFrame);

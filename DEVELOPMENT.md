@@ -1,4 +1,14 @@
-## Adknown Scalyr Api Datasource - a datasource that utilizes Scalyr's API
+# Adknown Scalyr Api Datasource 
+a datasource plugin that utilizes Scalyr's API
+
+# TODO:
+- Add screenshots to the README
+- Add Authentication support so that the backend can get the Scalyr Read Token / Write Token defined on the Config page of the data source
+    - Uncomment the config section that adds read and write tokens
+- Add Annotation support for possible values to search scalyr for
+
+# Docs    
+
 
 More documentation about datasource plugins can be found in the [Docs](https://github.com/grafana/grafana/blob/master/docs/sources/plugins/developing/datasources.md).
 
