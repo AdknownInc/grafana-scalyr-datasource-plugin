@@ -2,6 +2,8 @@ import {QueryCtrl} from 'app/plugins/sdk';
 import './css/query-editor.css!'
 
 const TIME_INDEX = 1;
+const INTERVAL_TYPE_WINDOW = 'window';
+const INTERVAL_TYPE_FIXED = 'fixed';
 
 export class GenericDatasourceQueryCtrl extends QueryCtrl {
 
@@ -19,7 +21,15 @@ export class GenericDatasourceQueryCtrl extends QueryCtrl {
         this.graphFunctions = [
             'mean', 'min', 'max', 'sumPerSecond', 'median', 'p10', 'p50', '95', '99', '999', 'p(n)', 'fraction', '', 'rate', 'count'
         ];
+        this.intervalTypes = [
+            INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED
+        ];
+        this.supportedIntervalTypes = [
+            'minute', 'hour', 'day', 'week', 'month'
+        ];
         this.target.graphFunction = this.target.graphFunction || this.graphFunctions[0];
+        this.target.intervalType = this.target.intervalType || this.intervalTypes[0];
+        this.target.chosenType = this.target.chosenType || this.supportedIntervalTypes[0];
         this.queryTypes = [
             'numeric query',
             'facet query',
@@ -44,7 +54,9 @@ export class GenericDatasourceQueryCtrl extends QueryCtrl {
         this.setTarget();
         switch (this.target.type) {
             case 'numeric query':
-                if (this.target.secondsInterval > 0) {
+                if (this.target.intervalType === INTERVAL_TYPE_FIXED
+                    || (this.target.intervalType === INTERVAL_TYPE_WINDOW && this.target.secondsInterval > 0))
+                {
                     this.panelCtrl.refresh(); // Asks the panel to refresh data.
                 }
                 break;
@@ -52,7 +64,8 @@ export class GenericDatasourceQueryCtrl extends QueryCtrl {
                 this.panelCtrl.refresh(); // Asks the panel to refresh data.
                 break;
             case 'complex numeric query':
-                if (this.target.secondsInterval > 0) {
+                if (this.target.intervalType === INTERVAL_TYPE_FIXED
+                    || (this.target.intervalType === INTERVAL_TYPE_WINDOW && this.target.secondsInterval > 0)) {
                     this.panelCtrl.refresh(); // Asks the panel to refresh data.
                 }
                 break;

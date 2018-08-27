@@ -29,8 +29,8 @@
       {"name": "GitHub", "url": "https://github.com/AdknownInc/grafana-scalyr-datasource-plugin"},
       {"name": "MIT License", "url": "https://github.com/AdknownInc/grafana-scalyr-datasource-plugin/blob/master/LICENSE"}
     ],
-    "version": "0.1.0",
-    "updated": "2018-08-16"
+    "version": "0.2.0",
+    "updated": "2018-08-26"
   },
 
   "dependencies": {

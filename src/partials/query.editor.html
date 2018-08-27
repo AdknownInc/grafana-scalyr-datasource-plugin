@@ -1,12 +1,12 @@
 <query-editor-row query-ctrl="ctrl" class="generic-datasource-query-row" has-text-edit-mode="true">
     <div class="gf-form-inline">
-        <div class="gf-form max-width-12">
+        <div class="gf-form gf-form-select-wrapper max-width-16">
             <select class="gf-form-input" ng-model="ctrl.target.type"
                     ng-options="f as f for f in ctrl.queryTypes"></select>
         </div>
 
         <div class="gf-form" ng-if="ctrl.target.type != 'complex numeric query'">
-            <button class="btn btn-secondary gf-form-btn" ng-click="ctrl.openScalyrLogs()" >
+            <button class="btn btn-secondary gf-form-btn" ng-click="ctrl.openScalyrLogs()">
                 Show Logs In Scalyr
                 <i class="fa fa-caret-right"></i>
             </button>
@@ -29,14 +29,16 @@
                 <input class="input-small gf-form-input gf-form--grow" type="text"
                        ng-change="ctrl.onChangeInternal()"
                        ng-model="ctrl.target.filter">
-                </input>
             </div>
         </div>
         <div class="gf-form-inline">
             <div class="gf-form">
                 <label class="gf-form-label width-10">Graph Function</label>
-                <select class="gf-form-input" ng-model="ctrl.target.graphFunction" ng-change="ctrl.onChangeInternal()"
-                        ng-options="f as f for f in ctrl.graphFunctions"></select>
+                <div class="gf-form-select-wrapper width-10">
+                    <select class="gf-form-input" ng-model="ctrl.target.graphFunction"
+                            ng-change="ctrl.onChangeInternal()"
+                            ng-options="f as f for f in ctrl.graphFunctions"></select>
+                </div>
             </div>
             <div ng-if="ctrl.target.graphFunction != '' && ctrl.target.graphFunction != 'count' && ctrl.target.graphFunction != 'rate'">
 
@@ -50,10 +52,40 @@
         </div>
         <div class="gf-form-inline">
             <div class="gf-form">
-                <label class="gf-form-label width-10">Interval (seconds)</label>
-                <input class="input-small gf-form-input width-10" type="number"
+
+                <label class="gf-form-label width-10">Interval Type
+                    <info-popover mode="left-absolute">
+                        <p>Specify the time interval to group data on</p>
+                        <span ng-show="ctrl.target.intervalType === 'window'">
+                      Selected interval type is <em>Window</em>, this means data points will be returned in intervals up to the nearest second
+                    </span>
+                        <span ng-show="ctrl.target.intervalType === 'fixed'">
+                      Selected interval type is  <em>Fixed</em>, this means data will be grouped up to the nearest {{ctrl.target.chosenType}}
+                    </span>
+                    </info-popover>
+                </label>
+                <div class="gf-form-select-wrapper">
+                    <select class="gf-form-input input-small width-10" ng-model="ctrl.target.intervalType"
+                            ng-change="ctrl.onChangeInternal()"
+                            ng-options="f as f for f in ctrl.intervalTypes"></select>
+                </div>
+
+            </div>
+        </div>
+        <div class="gf-form-inline">
+            <div class="gf-form" ng-if="ctrl.target.intervalType == 'window'">
+                <label class="gf-form-label width-10">Window (seconds)</label>
+                <input class="gf-form-input input-small width-10" type="number"
                        ng-change="ctrl.onChangeInternal()"
                        ng-model="ctrl.target.secondsInterval">
+            </div>
+            <div class="gf-form" ng-if="ctrl.target.intervalType == 'fixed'">
+                <label class="gf-form-label width-10">Fixed Time Unit</label>
+                <div class="gf-form-select-wrapper width-10">
+                    <select class="gf-form-input input-small width-10" ng-model="ctrl.target.chosenType"
+                            ng-change="ctrl.onChangeInternal()"
+                            ng-options="f as f for f in ctrl.supportedIntervalTypes"></select>
+                </div>
             </div>
         </div>
     </div>
@@ -62,10 +94,9 @@
         <div class="gf-form-inline">
             <div class="gf-form gf-form--grow">
                 <label class="gf-form-label width-10">Filter</label>
-                <code-editor content="ctrl.target.filter" datasource="ctrl.datasource"
-                             ng-blur="ctrl.onChangeInternal()"
-                             data-mode="text">
-                </code-editor>
+                <input class="input-small gf-form-input gf-form--grow" type="text"
+                       ng-change="ctrl.onChangeInternal()"
+                       ng-model="ctrl.target.filter">
             </div>
         </div>
         <div class="gf-form-inline">
@@ -93,15 +124,43 @@
                 <input class="input-small gf-form-input gf-form--grow" type="text"
                        ng-change="ctrl.onChangeInternal()"
                        ng-model="ctrl.target.filter">
-                </input>
             </div>
         </div>
         <div class="gf-form-inline">
             <div class="gf-form">
-                <label class="gf-form-label width-10">Interval (seconds)</label>
-                <input class="input-small gf-form-input width-10" type="number"
+                <label class="gf-form-label width-10">Interval Type
+                    <info-popover mode="left-absolute">
+                        <p>Specify the time interval to group data on</p>
+                        <span ng-show="ctrl.target.intervalType === 'window'">
+                      Selected interval type is <em>Window</em>, this means data points will be returned in intervals up to the nearest second
+                    </span>
+                        <span ng-show="ctrl.target.intervalType === 'fixed'">
+                      Selected interval type is  <em>Fixed</em>, this means data will be grouped up to the nearest {{ctrl.target.chosenType}}
+                    </span>
+                    </info-popover>
+                </label>
+                <div class="gf-form-select-wrapper">
+                    <select class="gf-form-input input-small width-10" ng-model="ctrl.target.intervalType"
+                            ng-change="ctrl.onChangeInternal()"
+                            ng-options="f as f for f in ctrl.intervalTypes"></select>
+                </div>
+
+            </div>
+        </div>
+        <div class="gf-form-inline">
+            <div class="gf-form" ng-if="ctrl.target.intervalType == 'window'">
+                <label class="gf-form-label width-10">Window (seconds)</label>
+                <input class="gf-form-input input-small width-10" type="number"
                        ng-change="ctrl.onChangeInternal()"
                        ng-model="ctrl.target.secondsInterval">
+            </div>
+            <div class="gf-form" ng-if="ctrl.target.intervalType == 'fixed'">
+                <label class="gf-form-label width-10">Fixed Time Unit</label>
+                <div class="gf-form-select-wrapper width-10">
+                    <select class="gf-form-input input-small width-10" ng-model="ctrl.target.chosenType"
+                            ng-change="ctrl.onChangeInternal()"
+                            ng-options="f as f for f in ctrl.supportedIntervalTypes"></select>
+                </div>
             </div>
         </div>
     </div>

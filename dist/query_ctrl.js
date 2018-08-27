@@ -3,7 +3,7 @@
 System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_export, _context) {
     "use strict";
 
-    var QueryCtrl, _createClass, TIME_INDEX, GenericDatasourceQueryCtrl;
+    var QueryCtrl, _createClass, TIME_INDEX, INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED, GenericDatasourceQueryCtrl;
 
     function _classCallCheck(instance, Constructor) {
         if (!(instance instanceof Constructor)) {
@@ -59,6 +59,8 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
             }();
 
             TIME_INDEX = 1;
+            INTERVAL_TYPE_WINDOW = 'window';
+            INTERVAL_TYPE_FIXED = 'fixed';
 
             _export('GenericDatasourceQueryCtrl', GenericDatasourceQueryCtrl = function (_QueryCtrl) {
                 _inherits(GenericDatasourceQueryCtrl, _QueryCtrl);
@@ -74,7 +76,11 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                     _this.target.secondsInterval = _this.target.secondsInterval || 60;
                     // this.target.interval = this.target.interval || 60;
                     _this.graphFunctions = ['mean', 'min', 'max', 'sumPerSecond', 'median', 'p10', 'p50', '95', '99', '999', 'p(n)', 'fraction', '', 'rate', 'count'];
+                    _this.intervalTypes = [INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED];
+                    _this.supportedIntervalTypes = ['minute', 'hour', 'day', 'week', 'month'];
                     _this.target.graphFunction = _this.target.graphFunction || _this.graphFunctions[0];
+                    _this.target.intervalType = _this.target.intervalType || _this.intervalTypes[0];
+                    _this.target.chosenType = _this.target.chosenType || _this.supportedIntervalTypes[0];
                     _this.queryTypes = ['numeric query', 'facet query', 'complex numeric query'];
                     _this.target.type = _this.target.type || _this.queryTypes[0];
                     _this.target.percentage = _this.target.percentage || 25;
@@ -100,7 +106,7 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                         this.setTarget();
                         switch (this.target.type) {
                             case 'numeric query':
-                                if (this.target.secondsInterval > 0) {
+                                if (this.target.intervalType === INTERVAL_TYPE_FIXED || this.target.intervalType === INTERVAL_TYPE_WINDOW && this.target.secondsInterval > 0) {
                                     this.panelCtrl.refresh(); // Asks the panel to refresh data.
                                 }
                                 break;
@@ -108,7 +114,7 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                                 this.panelCtrl.refresh(); // Asks the panel to refresh data.
                                 break;
                             case 'complex numeric query':
-                                if (this.target.secondsInterval > 0) {
+                                if (this.target.intervalType === INTERVAL_TYPE_FIXED || this.target.intervalType === INTERVAL_TYPE_WINDOW && this.target.secondsInterval > 0) {
                                     this.panelCtrl.refresh(); // Asks the panel to refresh data.
                                 }
                                 break;
