@@ -36,5 +36,23 @@
   "dependencies": {
     "grafanaVersion": "5.x.x",
     "plugins": [ ]
-  }
+  },
+
+  "routes": [
+    {
+      "path": "query",
+      "method": "POST",
+      "url": "{{.JsonData.url}}/query",
+      "headers": [
+        {
+          "name": "X-SCALYR-READ-KEY",
+          "content": "{{.SecureJsonData.readtoken}}"
+        },
+        {
+          "name": "X-SCALYR-WRITE-KEY",
+          "content": "{{.SecureJsonData.writetoken}}"
+        }
+      ]
+    }
+  ]
 }
