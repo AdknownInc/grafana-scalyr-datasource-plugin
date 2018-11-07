@@ -87,6 +87,8 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                     _this.target.placeholder = "target " + _this.panel.targets.length;
                     _this.window = $window;
                     _this.serializer = $httpParamSerializer;
+
+                    _this.datasource.queryControls.push(_this);
                     return _this;
                 }
 
@@ -119,6 +121,47 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                                 }
                                 break;
                             default:
+                        }
+                    }
+                }, {
+                    key: 'getComplexParts',
+                    value: function getComplexParts() {
+                        var _this2 = this;
+
+                        if (this.target.type !== 'complex numeric query' || !this.target.showQueryParts) {
+                            return;
+                        }
+
+                        if (this.datasource.response.data) {
+                            var data = this.datasource.response.data.find(function (element) {
+                                return element.refId === _this2.target.refId;
+                            });
+
+                            this.queryParts = [];
+                            var _iteratorNormalCompletion = true;
+                            var _didIteratorError = false;
+                            var _iteratorError = undefined;
+
+                            try {
+                                for (var _iterator = data.queries[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                                    var query = _step.value;
+
+                                    this.queryParts.push(query.function + "(" + query.filter + ")");
+                                }
+                            } catch (err) {
+                                _didIteratorError = true;
+                                _iteratorError = err;
+                            } finally {
+                                try {
+                                    if (!_iteratorNormalCompletion && _iterator.return) {
+                                        _iterator.return();
+                                    }
+                                } finally {
+                                    if (_didIteratorError) {
+                                        throw _iteratorError;
+                                    }
+                                }
+                            }
                         }
                     }
                 }, {
@@ -158,13 +201,13 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                 }, {
                     key: 'getTargetTimeframe',
                     value: function getTargetTimeframe(target) {
-                        var _iteratorNormalCompletion = true;
-                        var _didIteratorError = false;
-                        var _iteratorError = undefined;
+                        var _iteratorNormalCompletion2 = true;
+                        var _didIteratorError2 = false;
+                        var _iteratorError2 = undefined;
 
                         try {
-                            for (var _iterator = this.panelCtrl.dataList[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                                var dataSet = _step.value;
+                            for (var _iterator2 = this.panelCtrl.dataList[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                                var dataSet = _step2.value;
 
                                 if (dataSet.target === target) {
                                     return {
@@ -174,16 +217,16 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                                 }
                             }
                         } catch (err) {
-                            _didIteratorError = true;
-                            _iteratorError = err;
+                            _didIteratorError2 = true;
+                            _iteratorError2 = err;
                         } finally {
                             try {
-                                if (!_iteratorNormalCompletion && _iterator.return) {
-                                    _iterator.return();
+                                if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                                    _iterator2.return();
                                 }
                             } finally {
-                                if (_didIteratorError) {
-                                    throw _iteratorError;
+                                if (_didIteratorError2) {
+                                    throw _iteratorError2;
                                 }
                             }
                         }

@@ -40,6 +40,8 @@ export class GenericDatasourceQueryCtrl extends QueryCtrl {
         this.target.placeholder = "target " + this.panel.targets.length;
         this.window = $window;
         this.serializer = $httpParamSerializer
+
+        this.datasource.queryControls.push(this);
     }
 
     getOptions(query) {
@@ -72,6 +74,23 @@ export class GenericDatasourceQueryCtrl extends QueryCtrl {
             default:
         }
 
+    }
+
+    getComplexParts() {
+        if(this.target.type !== 'complex numeric query' || !this.target.showQueryParts) {
+            return;
+        }
+
+        if(this.datasource.response.data) {
+            let data = this.datasource.response.data.find((element) => {
+                return element.refId === this.target.refId
+            });
+
+            this.queryParts = [];
+            for (let query of data.queries) {
+                this.queryParts.push(query.function + "(" + query.filter + ")");
+            }
+        }
     }
 
     setTarget() {
