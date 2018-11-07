@@ -49,11 +49,15 @@ System.register(['lodash'], function (_export, _context) {
                     if (typeof instanceSettings.basicAuth === 'string' && instanceSettings.basicAuth.length > 0) {
                         this.headers['Authorization'] = instanceSettings.basicAuth;
                     }
+
+                    this.queryControls = [];
                 }
 
                 _createClass(GenericDatasource, [{
                     key: 'query',
                     value: function query(options) {
+                        var _this = this;
+
                         // var query = this.buildQueryParameters(options);
                         var query = options;
                         query.targets = query.targets.filter(function (t) {
@@ -68,6 +72,35 @@ System.register(['lodash'], function (_export, _context) {
                             url: this.url + '/query',
                             data: query,
                             method: 'POST'
+                        }).then(function (res) {
+                            //Holds on to the response so that it's accessible by the query controls
+                            _this.response = res;
+                            var _iteratorNormalCompletion = true;
+                            var _didIteratorError = false;
+                            var _iteratorError = undefined;
+
+                            try {
+                                for (var _iterator = _this.queryControls[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                                    var queryControl = _step.value;
+
+                                    queryControl.getComplexParts();
+                                }
+                            } catch (err) {
+                                _didIteratorError = true;
+                                _iteratorError = err;
+                            } finally {
+                                try {
+                                    if (!_iteratorNormalCompletion && _iterator.return) {
+                                        _iterator.return();
+                                    }
+                                } finally {
+                                    if (_didIteratorError) {
+                                        throw _iteratorError;
+                                    }
+                                }
+                            }
+
+                            return res;
                         });
                     }
                 }, {
@@ -137,12 +170,14 @@ System.register(['lodash'], function (_export, _context) {
                         options.withCredentials = this.withCredentials;
                         options.headers = this.headers;
 
+                        this.options = options;
+
                         return this.backendSrv.datasourceRequest(options);
                     }
                 }, {
                     key: 'buildQueryParameters',
                     value: function buildQueryParameters(options) {
-                        var _this = this;
+                        var _this2 = this;
 
                         //remove placeholder targets
                         options.targets = _.filter(options.targets, function (target) {
@@ -151,7 +186,7 @@ System.register(['lodash'], function (_export, _context) {
 
                         var targets = _.map(options.targets, function (target) {
                             return {
-                                target: _this.templateSrv.replace(target.target, options.scopedVars, 'regex'),
+                                target: _this2.templateSrv.replace(target.target, options.scopedVars, 'regex'),
                                 refId: target.refId,
                                 hide: target.hide,
                                 type: target.type || 'timeserie'

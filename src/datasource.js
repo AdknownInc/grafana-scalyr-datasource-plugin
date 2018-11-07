@@ -14,6 +14,8 @@ export class GenericDatasource {
         if (typeof instanceSettings.basicAuth === 'string' && instanceSettings.basicAuth.length > 0) {
             this.headers['Authorization'] = instanceSettings.basicAuth;
         }
+
+        this.queryControls = [];
     }
 
     query(options) {
@@ -29,7 +31,14 @@ export class GenericDatasource {
             url: this.url + '/query',
             data: query,
             method: 'POST'
-        });
+        }).then((res) => {
+            //Holds on to the response so that it's accessible by the query controls
+            this.response = res;
+            for(let queryControl of this.queryControls) {
+                queryControl.getComplexParts();
+            }
+            return res;
+        } );
     }
 
     testDatasource() {
@@ -92,6 +101,8 @@ export class GenericDatasource {
     doRequest(options) {
         options.withCredentials = this.withCredentials;
         options.headers = this.headers;
+
+        this.options = options;
 
         return this.backendSrv.datasourceRequest(options);
     }
