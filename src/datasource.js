@@ -15,6 +15,10 @@ export class GenericDatasource {
             this.headers['Authorization'] = instanceSettings.basicAuth;
         }
 
+        let parseQueries = instanceSettings.jsonData.parseQueries;
+
+        this.parseComplex = !(!parseQueries || parseQueries === "No");
+
         this.queryControls = [];
     }
 
@@ -26,6 +30,8 @@ export class GenericDatasource {
         if (query.targets.length <= 0) {
             return this.q.when({data: []});
         }
+
+        query.parseComplex = this.parseComplex;
 
         return this.doRequest({
             url: this.url + '/query',

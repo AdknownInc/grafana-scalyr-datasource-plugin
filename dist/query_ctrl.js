@@ -89,6 +89,8 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                     _this.serializer = $httpParamSerializer;
 
                     _this.datasource.queryControls.push(_this);
+
+                    _this.target.showQueryParts = _this.datasource.parseComplex;
                     return _this;
                 }
 
@@ -128,7 +130,7 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                     value: function getComplexParts() {
                         var _this2 = this;
 
-                        if (this.target.type !== 'complex numeric query' || !this.target.showQueryParts) {
+                        if (this.target.type !== 'complex numeric query' || !this.target.showQueryParts || !this.datasource.parseComplex) {
                             return;
                         }
 
