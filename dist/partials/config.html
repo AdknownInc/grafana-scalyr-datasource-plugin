@@ -43,7 +43,13 @@
 <div class="gf-form-group">
     <div class="gf-form max-width-30">
         <span class="gf-form-label width-12">View complex query parts</span>
-        <select class="gf-form-input" ng-model="ctrl.current.jsonData.parseQueries" ng-options="f for f in ['Yes', 'No']"></select>
+        <div class="gf-form-select-wrapper gf-form-select-wrapper--has-help-icon max-width-24">
+            <select class="gf-form-input" ng-model="ctrl.current.jsonData.parseQueries"
+                    ng-options="f for f in ['Yes', 'No']"></select>
+            <info-popover mode="right-absolute">
+                Enable the ability to view split up complex query parts
+            </info-popover>
+        </div>
     </div>
 </div>
 

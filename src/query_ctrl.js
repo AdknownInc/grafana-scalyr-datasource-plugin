@@ -39,9 +39,11 @@ export class GenericDatasourceQueryCtrl extends QueryCtrl {
         this.target.percentage = this.target.percentage || 25;
         this.target.placeholder = "target " + this.panel.targets.length;
         this.window = $window;
-        this.serializer = $httpParamSerializer
+        this.serializer = $httpParamSerializer;
 
         this.datasource.queryControls.push(this);
+
+        this.target.showQueryParts = this.datasource.parseComplex;
     }
 
     getOptions(query) {
@@ -77,7 +79,7 @@ export class GenericDatasourceQueryCtrl extends QueryCtrl {
     }
 
     getComplexParts() {
-        if(this.target.type !== 'complex numeric query' || !this.target.showQueryParts) {
+        if(this.target.type !== 'complex numeric query' || !this.target.showQueryParts || !this.datasource.parseComplex) {
             return;
         }
 
