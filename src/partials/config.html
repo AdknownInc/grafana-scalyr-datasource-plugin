@@ -41,28 +41,30 @@
 
 <h3 class="page-heading">Config</h3>
 <div class="gf-form-group">
-    <div class="gf-form max-width-30">
-        <span class="gf-form-label width-12">View complex query parts</span>
-        <div class="gf-form-select-wrapper gf-form-select-wrapper--has-help-icon max-width-24">
-            <select class="gf-form-input" ng-model="ctrl.current.jsonData.parseQueries"
-                    ng-options="f for f in ['Yes', 'No']"></select>
-            <info-popover mode="right-absolute">
-                Enable the ability to view split up complex query parts
-            </info-popover>
-        </div>
+    <div class="gf-form max-width-14">
+        <gf-form-switch class="gf-form" label="View complex query parts" label-class="width-14"
+                        checked="ctrl.current.jsonData.parseQueries"></gf-form-switch>
+        <info-popover mode="right-absolute">
+            Enable the ability to view split up complex query parts
+        </info-popover>
+    </div>
+    <div class="gf-form max-width-14">
+        <gf-form-switch class="gf-form" label="Supply scalyr keys" label-class="width-14" checked="ctrl.current.modifyTokens"></gf-form-switch>
     </div>
 </div>
 
 <div ng-if="ctrl.current.access === 'proxy'">
-    <h3 class="page-heading">Scalyr API Tokens</h3>
-    <div class="gf-form-group">
-        <div class="gf-form max-width-30">
-            <span class="gf-form-label width-7">Read key</span>
-            <input type="text" class="gf-form-input" ng-model='ctrl.current.secureJsonData.readtoken' required>
-        </div>
-        <div class="gf-form max-width-30">
-            <span class="gf-form-label width-7">Write key</span>
-            <input type="text" class="gf-form-input" ng-model='ctrl.current.secureJsonData.writetoken' required>
+    <div ng-if="ctrl.current.modifyTokens">
+        <h3 class="page-heading">Scalyr API Tokens</h3>
+        <div class="gf-form-group">
+            <div class="gf-form max-width-30">
+                <span class="gf-form-label width-7">Read key</span>
+                <input type="text" class="gf-form-input" ng-model='ctrl.current.secureJsonData.readtoken' required>
+            </div>
+            <div class="gf-form max-width-30">
+                <span class="gf-form-label width-7">Write key</span>
+                <input type="text" class="gf-form-input" ng-model='ctrl.current.secureJsonData.writetoken' required>
+            </div>
         </div>
     </div>
 </div>

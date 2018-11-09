@@ -43,6 +43,8 @@ export class GenericDatasourceQueryCtrl extends QueryCtrl {
 
         this.datasource.queryControls.push(this);
 
+        this.datasource.panelName = this.panel.title;
+
         this.target.showQueryParts = this.datasource.parseComplex;
     }
 
