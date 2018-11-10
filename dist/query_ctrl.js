@@ -90,6 +90,8 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
 
                     _this.datasource.queryControls.push(_this);
 
+                    _this.datasource.panelName = _this.panel.title;
+
                     _this.target.showQueryParts = _this.datasource.parseComplex;
                     return _this;
                 }

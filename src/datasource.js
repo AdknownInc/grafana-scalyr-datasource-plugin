@@ -15,9 +15,7 @@ export class GenericDatasource {
             this.headers['Authorization'] = instanceSettings.basicAuth;
         }
 
-        let parseQueries = instanceSettings.jsonData.parseQueries;
-
-        this.parseComplex = !(!parseQueries || parseQueries === "No");
+        this.parseComplex = instanceSettings.jsonData.parseQueries;
 
         this.queryControls = [];
     }
@@ -32,6 +30,13 @@ export class GenericDatasource {
         }
 
         query.parseComplex = this.parseComplex;
+
+        query.user = this.backendSrv.contextSrv.user.name;
+        query.userId = this.backendSrv.contextSrv.user.id;
+        query.org = this.backendSrv.contextSrv.user.orgName;
+        query.orgId = this.backendSrv.contextSrv.user.orgId;
+        //Set in query ctrl constructor
+        query.panelName = this.panelName;
 
         return this.doRequest({
             url: this.url + '/query',

@@ -124,10 +124,6 @@
                 <input class="input-small gf-form-input gf-form--grow" type="text"
                        ng-change="ctrl.onChangeInternal()"
                        ng-model="ctrl.target.filter">
-                <div ng-if="ctrl.datasource.parseComplex">
-                    <label class="gf-form-label width-8">Show parts</label>
-                    <input type="checkbox" ng-model="ctrl.target.showQueryParts">
-                </div>
             </div>
         </div>
         <div ng-if="ctrl.target.showQueryParts" ng-repeat="(key, value) in ctrl.queryParts" class="gf-form-inline">
@@ -136,6 +132,8 @@
                 <input class="input-small gf-form-input gf-form--grow" type="text" ng-value="value" readonly>
             </div>
         </div>
+        <gf-form-switch class="gf-form" label="Show parts" label-class="width-10" checked="ctrl.target.showQueryParts"></gf-form-switch>
+
         <div class="gf-form-inline">
             <div class="gf-form">
                 <label class="gf-form-label width-10">Interval Type
