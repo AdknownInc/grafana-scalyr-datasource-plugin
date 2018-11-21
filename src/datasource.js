@@ -8,7 +8,7 @@ export class GenericDatasource {
         this.name = instanceSettings.name;
         this.q = $q;
         this.backendSrv = backendSrv;
-        this.templateSrv = templateSrv;
+        this.templateSrv = GenericDatasource.modifyTemplateVariableIdentifier(templateSrv, '~');
         this.withCredentials = instanceSettings.withCredentials;
         this.headers = {'Content-Type': 'application/json'};
         if (typeof instanceSettings.basicAuth === 'string' && instanceSettings.basicAuth.length > 0) {
@@ -20,13 +20,27 @@ export class GenericDatasource {
         this.queryControls = [];
     }
 
-    query(options) {
-        // var query = this.buildQueryParameters(options);
-        var query = options;
-        query.targets = query.targets.filter(t => !t.hide);
+    static modifyTemplateVariableIdentifier(templateSrv, newIdentifier) {
+        let regStr = templateSrv.regex.source;
 
-        if (query.targets.length <= 0) {
+        //There are 2 occurrences of '\$'. Remember to escape!
+        regStr = regStr.replace(/\\\$/g, newIdentifier);
+        templateSrv.regex = new RegExp(regStr, 'g');
+        return templateSrv;
+    }
+
+    query(options) {
+        options.targets = options.targets.filter(t => !t.hide);
+
+        if (options.targets.length <= 0) {
             return this.q.when({data: []});
+        }
+        //Deep copy the object. When template variables are swapped out we don't want to modify the original values
+        let query = JSON.parse(JSON.stringify(options));
+
+        for(let i = 0; i < query.targets.length; i++) {
+            let filter = query.targets[i].filter;
+            query.targets[i].filter = this.templateSrv.replace(filter, null, 'regex')
         }
 
         query.parseComplex = this.parseComplex;

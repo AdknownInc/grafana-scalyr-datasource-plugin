@@ -43,7 +43,7 @@ System.register(['lodash'], function (_export, _context) {
                     this.name = instanceSettings.name;
                     this.q = $q;
                     this.backendSrv = backendSrv;
-                    this.templateSrv = templateSrv;
+                    this.templateSrv = GenericDatasource.modifyTemplateVariableIdentifier(templateSrv, '~');
                     this.withCredentials = instanceSettings.withCredentials;
                     this.headers = { 'Content-Type': 'application/json' };
                     if (typeof instanceSettings.basicAuth === 'string' && instanceSettings.basicAuth.length > 0) {
@@ -60,14 +60,19 @@ System.register(['lodash'], function (_export, _context) {
                     value: function query(options) {
                         var _this = this;
 
-                        // var query = this.buildQueryParameters(options);
-                        var query = options;
-                        query.targets = query.targets.filter(function (t) {
+                        options.targets = options.targets.filter(function (t) {
                             return !t.hide;
                         });
 
-                        if (query.targets.length <= 0) {
+                        if (options.targets.length <= 0) {
                             return this.q.when({ data: [] });
+                        }
+                        //Deep copy the object. When template variables are swapped out we don't want to modify the original values
+                        var query = JSON.parse(JSON.stringify(options));
+
+                        for (var i = 0; i < query.targets.length; i++) {
+                            var filter = query.targets[i].filter;
+                            query.targets[i].filter = this.templateSrv.replace(filter, null, 'regex');
                         }
 
                         query.parseComplex = this.parseComplex;
@@ -207,6 +212,16 @@ System.register(['lodash'], function (_export, _context) {
                         options.targets = targets;
 
                         return options;
+                    }
+                }], [{
+                    key: 'modifyTemplateVariableIdentifier',
+                    value: function modifyTemplateVariableIdentifier(templateSrv, newIdentifier) {
+                        var regStr = templateSrv.regex.source;
+
+                        //There are 2 occurrences of '\$'. Remember to escape!
+                        regStr = regStr.replace(/\\\$/g, newIdentifier);
+                        templateSrv.regex = new RegExp(regStr, 'g');
+                        return templateSrv;
                     }
                 }]);
 

@@ -1,6 +1,12 @@
 # grafana-scalyr-datasource-plugin
 A plugin for using scalyr's data in grafana. Requires a proxy server
 
+#Variable Templating
+This plugin makes use of Grafana's variables feature. However, due to the fact that Scalyr uses "$" as a special character, this plugin uses "~" as a variable identifier
+
+
+
+
 # TODO:
 - Add screenshots to the README
 - Add Annotation support for possible values to search scalyr for
