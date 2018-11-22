@@ -13,10 +13,21 @@ Say, for example, you want to send a Scalyr query like this:
 
 If there are no Grafana variables with the name "error" then this will be sent literally
 
-Now, say we have a Grafana variable with the name "error", you would escape the first tilde like so:
+Now, say we have a Grafana variable with the name "error", that has the value "cool" you would escape the first tilde like so:
 
 `$someScalryField contains "my special ~~error~"`
 
+and it would interpolate to 
+
+`$someScalryField contains "my special ~cool~"`
+
+If you have a Grafana variable with the name "error" and you want it to literally say "~error~", simply escape it with a backslash
+
+`$someScalryField contains "my special \~error"`
+
+which will interpolate to
+
+`$someScalryField contains "my special ~error"`
 
 # TODO:
 - Add screenshots to the README

@@ -8,7 +8,10 @@ export class GenericDatasource {
         this.name = instanceSettings.name;
         this.q = $q;
         this.backendSrv = backendSrv;
-        this.templateSrv = GenericDatasource.modifyTemplateVariableIdentifier(templateSrv, '~');
+        this.templateVarIdentifier = '~';
+        this.templateVarEscaperChar = "\\";
+        this.templateSrv = GenericDatasource.modifyTemplateVariableIdentifier(templateSrv, this.templateVarIdentifier);
+        this.templateSrv = GenericDatasource.addTemplateVariableEscapeChar(templateSrv, this.templateVarEscaperChar, this.templateVarIdentifier);
         this.withCredentials = instanceSettings.withCredentials;
         this.headers = {'Content-Type': 'application/json'};
         if (typeof instanceSettings.basicAuth === 'string' && instanceSettings.basicAuth.length > 0) {
@@ -29,6 +32,18 @@ export class GenericDatasource {
         return templateSrv;
     }
 
+    static addTemplateVariableEscapeChar(templateSrv, escape, identifier) {
+        let regStr = templateSrv.regex.source;
+
+        regStr = regStr.replace(RegExp(identifier, 'g'), `(?<=[^${"\\" + escape}]|^)${identifier}`);
+        templateSrv.regex = new RegExp(regStr, 'g');
+        return templateSrv;
+    }
+
+    removeEscapeChar(filter) {
+        return filter.replace(RegExp("\\" + this.templateVarEscaperChar + this.templateVarIdentifier,'g'), this.templateVarIdentifier);
+    }
+
     query(options) {
         options.targets = options.targets.filter(t => !t.hide);
 
@@ -40,7 +55,8 @@ export class GenericDatasource {
 
         for(let i = 0; i < query.targets.length; i++) {
             let filter = query.targets[i].filter;
-            query.targets[i].filter = this.templateSrv.replace(filter, null, 'regex')
+            query.targets[i].filter = this.templateSrv.replace(filter, null, 'regex');
+            query.targets[i].filter = this.removeEscapeChar(query.targets[i].filter);
         }
 
         query.parseComplex = this.parseComplex;

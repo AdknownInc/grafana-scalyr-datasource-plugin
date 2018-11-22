@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-System.register(['lodash'], function (_export, _context) {
+System.register(["lodash"], function (_export, _context) {
     "use strict";
 
     var _, _createClass, GenericDatasource;
@@ -34,7 +34,7 @@ System.register(['lodash'], function (_export, _context) {
                 };
             }();
 
-            _export('GenericDatasource', GenericDatasource = function () {
+            _export("GenericDatasource", GenericDatasource = function () {
                 function GenericDatasource(instanceSettings, $q, backendSrv, templateSrv) {
                     _classCallCheck(this, GenericDatasource);
 
@@ -43,7 +43,11 @@ System.register(['lodash'], function (_export, _context) {
                     this.name = instanceSettings.name;
                     this.q = $q;
                     this.backendSrv = backendSrv;
-                    this.templateSrv = GenericDatasource.modifyTemplateVariableIdentifier(templateSrv, '~');
+                    this.templateVarIdentifier = '~';
+                    this.templateVarEscaperChar = "\\";
+                    this.templateSrv = GenericDatasource.modifyTemplateVariableIdentifier(templateSrv, this.templateVarIdentifier);
+                    this.templateSrv = GenericDatasource.addTemplateVariableEscapeChar(templateSrv, this.templateVarEscaperChar, this.templateVarIdentifier);
+                    console.log(this.templateSrv.regex);
                     this.withCredentials = instanceSettings.withCredentials;
                     this.headers = { 'Content-Type': 'application/json' };
                     if (typeof instanceSettings.basicAuth === 'string' && instanceSettings.basicAuth.length > 0) {
@@ -56,7 +60,12 @@ System.register(['lodash'], function (_export, _context) {
                 }
 
                 _createClass(GenericDatasource, [{
-                    key: 'query',
+                    key: "removeEscapeChar",
+                    value: function removeEscapeChar(filter) {
+                        return filter.replace(RegExp("\\" + this.templateVarEscaperChar + this.templateVarIdentifier, 'g'), this.templateVarIdentifier);
+                    }
+                }, {
+                    key: "query",
                     value: function query(options) {
                         var _this = this;
 
@@ -73,6 +82,8 @@ System.register(['lodash'], function (_export, _context) {
                         for (var i = 0; i < query.targets.length; i++) {
                             var filter = query.targets[i].filter;
                             query.targets[i].filter = this.templateSrv.replace(filter, null, 'regex');
+                            query.targets[i].filter = this.removeEscapeChar(query.targets[i].filter);
+                            console.log(query.targets[i].filter);
                         }
 
                         query.parseComplex = this.parseComplex;
@@ -120,7 +131,7 @@ System.register(['lodash'], function (_export, _context) {
                         });
                     }
                 }, {
-                    key: 'testDatasource',
+                    key: "testDatasource",
                     value: function testDatasource() {
                         return this.doRequest({
                             url: this.url + '/',
@@ -132,7 +143,7 @@ System.register(['lodash'], function (_export, _context) {
                         });
                     }
                 }, {
-                    key: 'annotationQuery',
+                    key: "annotationQuery",
                     value: function annotationQuery(options) {
                         var query = this.templateSrv.replace(options.annotation.query, {}, 'glob');
                         var annotationQuery = {
@@ -156,7 +167,7 @@ System.register(['lodash'], function (_export, _context) {
                         });
                     }
                 }, {
-                    key: 'metricFindQuery',
+                    key: "metricFindQuery",
                     value: function metricFindQuery(query) {
                         var interpolated = {
                             target: this.templateSrv.replace(query, null, 'regex')
@@ -169,7 +180,7 @@ System.register(['lodash'], function (_export, _context) {
                         }).then(this.mapToTextValue);
                     }
                 }, {
-                    key: 'mapToTextValue',
+                    key: "mapToTextValue",
                     value: function mapToTextValue(result) {
                         return _.map(result.data, function (d, i) {
                             if (d && d.text && d.value) {
@@ -181,7 +192,7 @@ System.register(['lodash'], function (_export, _context) {
                         });
                     }
                 }, {
-                    key: 'doRequest',
+                    key: "doRequest",
                     value: function doRequest(options) {
                         options.withCredentials = this.withCredentials;
                         options.headers = this.headers;
@@ -191,7 +202,7 @@ System.register(['lodash'], function (_export, _context) {
                         return this.backendSrv.datasourceRequest(options);
                     }
                 }, {
-                    key: 'buildQueryParameters',
+                    key: "buildQueryParameters",
                     value: function buildQueryParameters(options) {
                         var _this2 = this;
 
@@ -214,7 +225,7 @@ System.register(['lodash'], function (_export, _context) {
                         return options;
                     }
                 }], [{
-                    key: 'modifyTemplateVariableIdentifier',
+                    key: "modifyTemplateVariableIdentifier",
                     value: function modifyTemplateVariableIdentifier(templateSrv, newIdentifier) {
                         var regStr = templateSrv.regex.source;
 
@@ -223,12 +234,21 @@ System.register(['lodash'], function (_export, _context) {
                         templateSrv.regex = new RegExp(regStr, 'g');
                         return templateSrv;
                     }
+                }, {
+                    key: "addTemplateVariableEscapeChar",
+                    value: function addTemplateVariableEscapeChar(templateSrv, escape, identifier) {
+                        var regStr = templateSrv.regex.source;
+
+                        regStr = regStr.replace(RegExp(identifier, 'g'), "(?<=[^" + ("\\" + escape) + "]|^)" + identifier);
+                        templateSrv.regex = new RegExp(regStr, 'g');
+                        return templateSrv;
+                    }
                 }]);
 
                 return GenericDatasource;
             }());
 
-            _export('GenericDatasource', GenericDatasource);
+            _export("GenericDatasource", GenericDatasource);
         }
     };
 });
