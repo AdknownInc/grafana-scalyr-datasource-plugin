@@ -46,8 +46,7 @@ System.register(["lodash"], function (_export, _context) {
                     this.templateVarIdentifier = '~';
                     this.templateVarEscaperChar = "\\";
                     this.templateSrv = GenericDatasource.modifyTemplateVariableIdentifier(templateSrv, this.templateVarIdentifier);
-                    this.templateSrv = GenericDatasource.addTemplateVariableEscapeChar(templateSrv, this.templateVarEscaperChar, this.templateVarIdentifier);
-                    console.log(this.templateSrv.regex);
+                    this.templateSrv = GenericDatasource.addTemplateVariableEscapeChar(this.templateSrv, this.templateVarEscaperChar, this.templateVarIdentifier);
                     this.withCredentials = instanceSettings.withCredentials;
                     this.headers = { 'Content-Type': 'application/json' };
                     if (typeof instanceSettings.basicAuth === 'string' && instanceSettings.basicAuth.length > 0) {
@@ -57,12 +56,36 @@ System.register(["lodash"], function (_export, _context) {
                     this.parseComplex = instanceSettings.jsonData.parseQueries;
 
                     this.queryControls = [];
+
+                    //Used for escaping template variables, needed to write regex backwards to take advantage of lookbehinds
+                    String.prototype.reverse = function () {
+                        return this.split('').reverse().join('');
+                    };
                 }
 
                 _createClass(GenericDatasource, [{
                     key: "removeEscapeChar",
                     value: function removeEscapeChar(filter) {
                         return filter.replace(RegExp("\\" + this.templateVarEscaperChar + this.templateVarIdentifier, 'g'), this.templateVarIdentifier);
+                    }
+                }, {
+                    key: "findAndReverse",
+                    value: function findAndReverse(filter) {
+                        var newFilter = filter.reverse();
+                        return newFilter.replace(RegExp("(\\w+)(?=" + this.templateVarIdentifier + "(?!\\" + this.templateVarEscaperChar + "))", 'g'), function (a, b) {
+                            return b.reverse();
+                        });
+                    }
+                }, {
+                    key: "reverseAllVariables",
+                    value: function reverseAllVariables() {
+                        for (var variable in this.templateSrv.index) {
+                            // noinspection JSUnfilteredForInLoop
+                            if (this.templateSrv.index[variable] instanceof Object && this.templateSrv.index[variable].hasOwnProperty("current")) {
+                                // noinspection JSUnfilteredForInLoop
+                                this.templateSrv.index[variable].current.value = this.templateSrv.index[variable].current.value.reverse();
+                            }
+                        }
                     }
                 }, {
                     key: "query",
@@ -80,10 +103,11 @@ System.register(["lodash"], function (_export, _context) {
                         var query = JSON.parse(JSON.stringify(options));
 
                         for (var i = 0; i < query.targets.length; i++) {
-                            var filter = query.targets[i].filter;
-                            query.targets[i].filter = this.templateSrv.replace(filter, null, 'regex');
+                            this.reverseAllVariables();
+                            var filter = this.findAndReverse(query.targets[i].filter);
+                            query.targets[i].filter = this.findAndReverse(this.templateSrv.replace(filter, null, 'regex'));
                             query.targets[i].filter = this.removeEscapeChar(query.targets[i].filter);
-                            console.log(query.targets[i].filter);
+                            this.reverseAllVariables();
                         }
 
                         query.parseComplex = this.parseComplex;
@@ -239,7 +263,8 @@ System.register(["lodash"], function (_export, _context) {
                     value: function addTemplateVariableEscapeChar(templateSrv, escape, identifier) {
                         var regStr = templateSrv.regex.source;
 
-                        regStr = regStr.replace(RegExp(identifier, 'g'), "(?<=[^" + ("\\" + escape) + "]|^)" + identifier);
+                        //We have to write our regex backwards because lookbehinds aren't supported everywhere yet.
+                        regStr = regStr.replace(RegExp(identifier + "\\(\\\\w\\+\\)", 'g'), "(\\w+)" + identifier + "(?=[^" + ("\\" + escape) + "]|$)");
                         templateSrv.regex = new RegExp(regStr, 'g');
                         return templateSrv;
                     }

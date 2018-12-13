@@ -11,7 +11,7 @@ export class GenericDatasource {
         this.templateVarIdentifier = '~';
         this.templateVarEscaperChar = "\\";
         this.templateSrv = GenericDatasource.modifyTemplateVariableIdentifier(templateSrv, this.templateVarIdentifier);
-        this.templateSrv = GenericDatasource.addTemplateVariableEscapeChar(templateSrv, this.templateVarEscaperChar, this.templateVarIdentifier);
+        this.templateSrv = GenericDatasource.addTemplateVariableEscapeChar(this.templateSrv, this.templateVarEscaperChar, this.templateVarIdentifier);
         this.withCredentials = instanceSettings.withCredentials;
         this.headers = {'Content-Type': 'application/json'};
         if (typeof instanceSettings.basicAuth === 'string' && instanceSettings.basicAuth.length > 0) {
@@ -21,6 +21,11 @@ export class GenericDatasource {
         this.parseComplex = instanceSettings.jsonData.parseQueries;
 
         this.queryControls = [];
+
+        //Used for escaping template variables, needed to write regex backwards to take advantage of lookbehinds
+        String.prototype.reverse = function () {
+            return this.split('').reverse().join('');
+        };
     }
 
     static modifyTemplateVariableIdentifier(templateSrv, newIdentifier) {
@@ -35,13 +40,32 @@ export class GenericDatasource {
     static addTemplateVariableEscapeChar(templateSrv, escape, identifier) {
         let regStr = templateSrv.regex.source;
 
-        regStr = regStr.replace(RegExp(identifier, 'g'), `(?<=[^${"\\" + escape}]|^)${identifier}`);
+        //We have to write our regex backwards because lookbehinds aren't supported everywhere yet.
+        regStr = regStr.replace(RegExp(identifier + "\\(\\\\w\\+\\)", 'g'), `(\\w+)${identifier}(?=[^${"\\" + escape}]|$)`);
         templateSrv.regex = new RegExp(regStr, 'g');
         return templateSrv;
     }
 
     removeEscapeChar(filter) {
         return filter.replace(RegExp("\\" + this.templateVarEscaperChar + this.templateVarIdentifier,'g'), this.templateVarIdentifier);
+    }
+
+    findAndReverse(filter) {
+        let newFilter = filter.reverse();
+        return newFilter.replace(RegExp(`(\\w+)(?=${this.templateVarIdentifier}(?!\\${this.templateVarEscaperChar}))`,'g'), function (a,b){
+            return b.reverse();
+        });
+    }
+
+    reverseAllVariables() {
+        for (let variable in this.templateSrv.index) {
+            // noinspection JSUnfilteredForInLoop
+            if (this.templateSrv.index[variable] instanceof Object
+                && this.templateSrv.index[variable].hasOwnProperty("current")) {
+                // noinspection JSUnfilteredForInLoop
+                this.templateSrv.index[variable].current.value = this.templateSrv.index[variable].current.value.reverse();
+            }
+        }
     }
 
     query(options) {
@@ -54,9 +78,11 @@ export class GenericDatasource {
         let query = JSON.parse(JSON.stringify(options));
 
         for(let i = 0; i < query.targets.length; i++) {
-            let filter = query.targets[i].filter;
-            query.targets[i].filter = this.templateSrv.replace(filter, null, 'regex');
+            this.reverseAllVariables();
+            let filter = this.findAndReverse(query.targets[i].filter);
+            query.targets[i].filter = this.findAndReverse(this.templateSrv.replace(filter, null, 'regex'));
             query.targets[i].filter = this.removeEscapeChar(query.targets[i].filter);
+            this.reverseAllVariables();
         }
 
         query.parseComplex = this.parseComplex;
