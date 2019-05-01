@@ -174,4 +174,15 @@
         </div>
     </div>
 
+    <div ng-if="ctrl.target.type == 'power query'">
+        <div class="gf-form-inline">
+            <div class="gf-form gf-form--grow">
+                <label class="gf-form-label width-10">Query</label>
+                <input class="input-small gf-form-input gf-form--grow" type="text"
+                       ng-change="ctrl.onChangeInternal()"
+                       ng-model="ctrl.target.filter">
+            </div>
+        </div>
+    </div>
+
 </query-editor-row>
