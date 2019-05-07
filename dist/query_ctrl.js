@@ -93,20 +93,6 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                     _this.datasource.panelName = _this.panel.title;
 
                     _this.target.showQueryParts = _this.datasource.parseComplex;
-
-                    _this.target.powerQueryCommands = {
-                        "filter": "Selects events or records to process",
-                        "let": "Performs computations",
-                        "parse": "Extracts fields from log data",
-                        "lookup": "Retrieves values from a lookup table stored in a configuration file",
-                        "group": "Groups events together, and computes summary statistics for each group",
-                        "sort": "Sorts a table",
-                        "limit": "Limits the number of records displayed",
-                        "columns": "Specifies which columns to display, and/or renames columns"
-                    };
-
-                    //Initial empty query part to create first text box
-                    _this.target.powerQueryParts = [{}];
                     return _this;
                 }
 
