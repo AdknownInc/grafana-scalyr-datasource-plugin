@@ -6,14 +6,10 @@ const INTERVAL_TYPE_WINDOW = 'window';
 const INTERVAL_TYPE_FIXED = 'fixed';
 
 export class GenericDatasourceQueryCtrl extends QueryCtrl {
-
-
-
     constructor($scope, $injector, $window, $httpParamSerializer) {
         super($scope, $injector);
 
         this.scope = $scope;
-
 
         this.target.filter = this.target.filter || "";
         this.target.secondsInterval = this.target.secondsInterval || 60;
@@ -33,7 +29,8 @@ export class GenericDatasourceQueryCtrl extends QueryCtrl {
         this.queryTypes = [
             'numeric query',
             'facet query',
-            'complex numeric query'
+            'complex numeric query',
+            'power query'
         ];
         this.target.type = this.target.type || this.queryTypes[0];
         this.target.percentage = this.target.percentage || 25;
@@ -74,6 +71,9 @@ export class GenericDatasourceQueryCtrl extends QueryCtrl {
                     || (this.target.intervalType === INTERVAL_TYPE_WINDOW && this.target.secondsInterval > 0)) {
                     this.panelCtrl.refresh(); // Asks the panel to refresh data.
                 }
+                break;
+            case 'power query':
+                this.panelCtrl.refresh();
                 break;
             default:
         }

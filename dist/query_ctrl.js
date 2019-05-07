@@ -81,7 +81,7 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                     _this.target.graphFunction = _this.target.graphFunction || _this.graphFunctions[0];
                     _this.target.intervalType = _this.target.intervalType || _this.intervalTypes[0];
                     _this.target.chosenType = _this.target.chosenType || _this.supportedIntervalTypes[0];
-                    _this.queryTypes = ['numeric query', 'facet query', 'complex numeric query'];
+                    _this.queryTypes = ['numeric query', 'facet query', 'complex numeric query', 'power query'];
                     _this.target.type = _this.target.type || _this.queryTypes[0];
                     _this.target.percentage = _this.target.percentage || 25;
                     _this.target.placeholder = "target " + _this.panel.targets.length;
@@ -123,6 +123,9 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                                 if (this.target.intervalType === INTERVAL_TYPE_FIXED || this.target.intervalType === INTERVAL_TYPE_WINDOW && this.target.secondsInterval > 0) {
                                     this.panelCtrl.refresh(); // Asks the panel to refresh data.
                                 }
+                                break;
+                            case 'power query':
+                                this.panelCtrl.refresh();
                                 break;
                             default:
                         }

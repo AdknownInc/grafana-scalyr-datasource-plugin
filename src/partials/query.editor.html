@@ -174,4 +174,16 @@
         </div>
     </div>
 
+    <div ng-if="ctrl.target.type == 'power query'">
+        <div class="gf-form-inline">
+            <div class="gf-form gf-form--grow">
+                <label class="gf-form-label width-10">Query</label>
+                <input class="input-small gf-form-input gf-form--grow" type="text"
+                       ng-change="ctrl.onChangeInternal()"
+                       ng-model="ctrl.target.filter">
+            </div>
+        </div>
+        <gf-form-switch class="gf-form" label="Time Series" label-class="width-10" checked="ctrl.target.powerQueryTimeSeries"></gf-form-switch>
+    </div>
+
 </query-editor-row>
