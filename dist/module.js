@@ -1,9 +1,9 @@
 'use strict';
 
-System.register(['./datasource', './query_ctrl'], function (_export, _context) {
+System.register(['./datasource', './query_ctrl', './config_ctrl'], function (_export, _context) {
   "use strict";
 
-  var GenericDatasource, GenericDatasourceQueryCtrl, GenericConfigCtrl, GenericQueryOptionsCtrl, GenericAnnotationsQueryCtrl;
+  var GenericDatasource, ScalyrDatasourceQueryCtrl, ScalyrConfigCtrl, GenericQueryOptionsCtrl, GenericAnnotationsQueryCtrl;
 
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
@@ -15,15 +15,11 @@ System.register(['./datasource', './query_ctrl'], function (_export, _context) {
     setters: [function (_datasource) {
       GenericDatasource = _datasource.GenericDatasource;
     }, function (_query_ctrl) {
-      GenericDatasourceQueryCtrl = _query_ctrl.GenericDatasourceQueryCtrl;
+      ScalyrDatasourceQueryCtrl = _query_ctrl.ScalyrDatasourceQueryCtrl;
+    }, function (_config_ctrl) {
+      ScalyrConfigCtrl = _config_ctrl.ScalyrConfigCtrl;
     }],
     execute: function () {
-      _export('ConfigCtrl', GenericConfigCtrl = function GenericConfigCtrl() {
-        _classCallCheck(this, GenericConfigCtrl);
-      });
-
-      GenericConfigCtrl.templateUrl = 'partials/config.html';
-
       _export('QueryOptionsCtrl', GenericQueryOptionsCtrl = function GenericQueryOptionsCtrl() {
         _classCallCheck(this, GenericQueryOptionsCtrl);
       });
@@ -38,9 +34,9 @@ System.register(['./datasource', './query_ctrl'], function (_export, _context) {
 
       _export('Datasource', GenericDatasource);
 
-      _export('QueryCtrl', GenericDatasourceQueryCtrl);
+      _export('QueryCtrl', ScalyrDatasourceQueryCtrl);
 
-      _export('ConfigCtrl', GenericConfigCtrl);
+      _export('ConfigCtrl', ScalyrConfigCtrl);
 
       _export('QueryOptionsCtrl', GenericQueryOptionsCtrl);
 

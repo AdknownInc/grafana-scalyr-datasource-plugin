@@ -1,7 +1,7 @@
 {
   "name": "grafana-scalyr-datasource-plugin",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -12,7 +12,7 @@
     "type": "git",
     "url": "git+https://github.com/AdknownInc/grafana-scalyr-datasource-plugin"
   },
-  "author": "",
+  "author": "Matt Jourard",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/AdknownInc/grafana-scalyr-datasource-plugin/issues"
@@ -22,6 +22,8 @@
   },
   "engineStrict": true,
   "devDependencies": {
+    "@types/grafana": "https://git@github.com/CorpGlory/types-grafana.git",
+    "app": "^0.1.0",
     "babel": "^6.23.0",
     "chai": "~3.5.0",
     "grunt": "^1.0.4",

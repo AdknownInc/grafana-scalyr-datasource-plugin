@@ -5,9 +5,7 @@ const TIME_INDEX = 1;
 const INTERVAL_TYPE_WINDOW = 'window';
 const INTERVAL_TYPE_FIXED = 'fixed';
 
-export class GenericDatasourceQueryCtrl extends QueryCtrl {
-
-
+export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
 
     constructor($scope, $injector, $window, $httpParamSerializer) {
         super($scope, $injector);
@@ -153,5 +151,5 @@ export class GenericDatasourceQueryCtrl extends QueryCtrl {
     }
 }
 
-GenericDatasourceQueryCtrl.templateUrl = 'partials/query.editor.html';
+ScalyrDatasourceQueryCtrl.templateUrl = 'partials/query.editor.html';
 
