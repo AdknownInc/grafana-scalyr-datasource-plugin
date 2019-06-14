@@ -9,6 +9,9 @@
 
   "metrics": true,
   "annotations": false,
+  "backend": true,
+  "alerting": true,
+  "executable": "grafana-scalyr-datasource-plugin",
 
   "info": {
     "description": "datasource connecting Scalyr's api to Grafana",

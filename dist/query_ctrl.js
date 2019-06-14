@@ -93,6 +93,14 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                     _this.datasource.panelName = _this.panel.title;
 
                     _this.target.showQueryParts = _this.datasource.parseComplex;
+
+                    _this.user = _this.backendSrv.contextSrv.user.name;
+                    _this.userId = _this.backendSrv.contextSrv.user.id;
+                    _this.org = _this.backendSrv.contextSrv.user.orgName;
+                    _this.orgId = _this.backendSrv.contextSrv.user.orgId;
+                    //Set in query ctrl constructor
+                    _this.panelName = _this.panel.title;
+                    _this.parseComplex = _this.datasource.parseComplex;
                     return _this;
                 }
 

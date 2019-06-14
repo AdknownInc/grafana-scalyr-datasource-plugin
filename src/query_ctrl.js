@@ -46,6 +46,14 @@ export class GenericDatasourceQueryCtrl extends QueryCtrl {
         this.datasource.panelName = this.panel.title;
 
         this.target.showQueryParts = this.datasource.parseComplex;
+
+        this.user = this.backendSrv.contextSrv.user.name;
+        this.userId = this.backendSrv.contextSrv.user.id;
+        this.org = this.backendSrv.contextSrv.user.orgName;
+        this.orgId = this.backendSrv.contextSrv.user.orgId;
+        //Set in query ctrl constructor
+        this.panelName = this.panel.title;
+        this.parseComplex = this.datasource.parseComplex;
     }
 
     getOptions(query) {
