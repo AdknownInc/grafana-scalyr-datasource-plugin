@@ -34,15 +34,11 @@ func (t *ScalyrDatasource) Query(ctx context.Context, tsdbReq *datasource.Dataso
 
 	var jsonToPass []byte
 
+	//For normal queries, the entire request is stuffed into this field, as not all fields are sent
+	//normally by grafana
+	//For alerts, not all information can be sent at all, so we have to reformat the request with minimal data
 	if _, ok := bodyToSend["backendUse"]; !ok {
-		toPass := map[string]interface{}{
-			"targets": []interface{}{bodyToSend},
-			"range": map[string]interface{}{
-				"from": tsdbReq.TimeRange.FromEpochMs,
-				"to":   tsdbReq.TimeRange.ToEpochMs,
-			},
-		}
-		jsonToPass, err = json.Marshal(toPass)
+		jsonToPass, err = handleAlertRequest(tsdbReq, bodyToSend)
 		if err != nil {
 			return nil, err
 		}
@@ -80,6 +76,24 @@ func (t *ScalyrDatasource) Query(ctx context.Context, tsdbReq *datasource.Dataso
 	return &grafanaResponse, nil
 }
 
+//Converts the alert request into the format expected by the proxy server
+func handleAlertRequest(tsdbReq *datasource.DatasourceRequest, jsonRequest map[string]interface{}) ([]byte, error) {
+	toPass := map[string]interface{}{
+		"targets": []interface{}{jsonRequest},
+		"range": map[string]interface{}{
+			"from": tsdbReq.TimeRange.FromEpochMs,
+			"to":   tsdbReq.TimeRange.ToEpochMs,
+		},
+	}
+	jsonToPass, err := json.Marshal(toPass)
+	if err != nil {
+		return nil, err
+	}
+
+	return jsonToPass, nil
+}
+
+// Converts the response from the proxy server into the format that grafana expects from the backend plugin
 func convertProxyResponse(jsonBytes []byte) ([]*datasource.QueryResult, error) {
 	var proxyResponses []ProxyResponse
 	err := json.Unmarshal(jsonBytes, &proxyResponses)
