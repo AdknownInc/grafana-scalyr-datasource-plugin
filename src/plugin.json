@@ -4,7 +4,7 @@
   "type": "datasource",
 
   "partials": {
-    "config": "public/app/plugins/datasource/simplejson/partials/config.html"
+    "config": "public/app/plugins/datasource/grafana-scalyr-datasource-plugin/partials/config.html"
   },
 
   "metrics": true,

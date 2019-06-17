@@ -3,7 +3,7 @@
 System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_export, _context) {
     "use strict";
 
-    var QueryCtrl, _createClass, TIME_INDEX, INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED, GenericDatasourceQueryCtrl;
+    var QueryCtrl, _createClass, TIME_INDEX, INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED, ScalyrDatasourceQueryCtrl;
 
     function _classCallCheck(instance, Constructor) {
         if (!(instance instanceof Constructor)) {
@@ -62,13 +62,13 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
             INTERVAL_TYPE_WINDOW = 'window';
             INTERVAL_TYPE_FIXED = 'fixed';
 
-            _export('GenericDatasourceQueryCtrl', GenericDatasourceQueryCtrl = function (_QueryCtrl) {
-                _inherits(GenericDatasourceQueryCtrl, _QueryCtrl);
+            _export('ScalyrDatasourceQueryCtrl', ScalyrDatasourceQueryCtrl = function (_QueryCtrl) {
+                _inherits(ScalyrDatasourceQueryCtrl, _QueryCtrl);
 
-                function GenericDatasourceQueryCtrl($scope, $injector, $window, $httpParamSerializer) {
-                    _classCallCheck(this, GenericDatasourceQueryCtrl);
+                function ScalyrDatasourceQueryCtrl($scope, $injector, $window, $httpParamSerializer) {
+                    _classCallCheck(this, ScalyrDatasourceQueryCtrl);
 
-                    var _this = _possibleConstructorReturn(this, (GenericDatasourceQueryCtrl.__proto__ || Object.getPrototypeOf(GenericDatasourceQueryCtrl)).call(this, $scope, $injector));
+                    var _this = _possibleConstructorReturn(this, (ScalyrDatasourceQueryCtrl.__proto__ || Object.getPrototypeOf(ScalyrDatasourceQueryCtrl)).call(this, $scope, $injector));
 
                     _this.scope = $scope;
 
@@ -93,18 +93,10 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                     _this.datasource.panelName = _this.panel.title;
 
                     _this.target.showQueryParts = _this.datasource.parseComplex;
-
-                    _this.user = _this.backendSrv.contextSrv.user.name;
-                    _this.userId = _this.backendSrv.contextSrv.user.id;
-                    _this.org = _this.backendSrv.contextSrv.user.orgName;
-                    _this.orgId = _this.backendSrv.contextSrv.user.orgId;
-                    //Set in query ctrl constructor
-                    _this.panelName = _this.panel.title;
-                    _this.parseComplex = _this.datasource.parseComplex;
                     return _this;
                 }
 
-                _createClass(GenericDatasourceQueryCtrl, [{
+                _createClass(ScalyrDatasourceQueryCtrl, [{
                     key: 'getOptions',
                     value: function getOptions(query) {
                         return this.datasource.metricFindQuery(query || '');
@@ -245,12 +237,12 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                     }
                 }]);
 
-                return GenericDatasourceQueryCtrl;
+                return ScalyrDatasourceQueryCtrl;
             }(QueryCtrl));
 
-            _export('GenericDatasourceQueryCtrl', GenericDatasourceQueryCtrl);
+            _export('ScalyrDatasourceQueryCtrl', ScalyrDatasourceQueryCtrl);
 
-            GenericDatasourceQueryCtrl.templateUrl = 'partials/query.editor.html';
+            ScalyrDatasourceQueryCtrl.templateUrl = 'partials/query.editor.html';
         }
     };
 });
