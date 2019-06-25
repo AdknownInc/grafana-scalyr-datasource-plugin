@@ -11,6 +11,25 @@ System.register(["lodash"], function (_export, _context) {
         }
     }
 
+    function handleTsdbResponse(response) {
+        var res = [];
+        _.forEach(response.data.results, function (r) {
+            _.forEach(r.series, function (s) {
+                res.push({ target: s.name, datapoints: s.points, queries: r.meta, refId: r.refId });
+            });
+            _.forEach(r.tables, function (t) {
+                t.type = 'table';
+                t.refId = r.refId;
+                res.push(t);
+            });
+        });
+
+        response.data = res;
+        return response;
+    }
+
+    _export("handleTsdbResponse", handleTsdbResponse);
+
     return {
         setters: [function (_lodash) {
             _ = _lodash.default;
@@ -38,6 +57,7 @@ System.register(["lodash"], function (_export, _context) {
                 function GenericDatasource(instanceSettings, $q, backendSrv, templateSrv) {
                     _classCallCheck(this, GenericDatasource);
 
+                    this.datasourceId = instanceSettings.id;
                     this.type = instanceSettings.type;
                     this.url = instanceSettings.url;
                     this.name = instanceSettings.name;
@@ -95,7 +115,6 @@ System.register(["lodash"], function (_export, _context) {
                         options.targets = options.targets.filter(function (t) {
                             return !t.hide;
                         });
-
                         if (options.targets.length <= 0) {
                             return this.q.when({ data: [] });
                         }
@@ -119,12 +138,20 @@ System.register(["lodash"], function (_export, _context) {
                         //Set in query ctrl constructor
                         query.panelName = this.panelName;
 
-                        return this.doRequest({
-                            url: this.url + '/query',
-                            data: query,
-                            method: 'POST'
-                        }).then(function (res) {
-                            //Holds on to the response so that it's accessible by the query controls
+                        var tsdbRequest = {
+                            from: options.range.from.valueOf().toString(),
+                            to: options.range.to.valueOf().toString(),
+                            queries: [{
+                                datasourceId: this.datasourceId,
+                                backendUse: query
+                            }]
+                        };
+
+                        return this.backendSrv.datasourceRequest({
+                            url: '/api/tsdb/query',
+                            method: 'POST',
+                            data: tsdbRequest
+                        }).then(handleTsdbResponse).then(function (res) {
                             _this.response = res;
                             var _iteratorNormalCompletion = true;
                             var _didIteratorError = false;

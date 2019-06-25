@@ -75,8 +75,14 @@ module.exports = function(grunt) {
         },
         src: ['dist/test/spec/test-main.js', 'dist/test/spec/*_spec.js']
       }
+    },
+
+    exec: {
+      go_build: {
+        command: 'go build -o ./dist/grafana-scalyr-datasource-plugin_linux_amd64 ./pkg'
+      }
     }
   });
 
-  grunt.registerTask('default', ['clean', 'copy:src_to_dist', 'copy:pluginDef', 'babel', 'mochaTest']);
+  grunt.registerTask('default', ['clean', 'copy:src_to_dist', 'copy:pluginDef', 'babel', 'mochaTest', 'exec']);
 };
