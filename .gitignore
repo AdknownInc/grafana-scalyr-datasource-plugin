@@ -8,6 +8,7 @@ awsconfig
 /tmp
 vendor/phantomjs/phantomjs
 node_modules/
+pkg/vendor/
 
 # locally required config files
 public/css/*.min.css
