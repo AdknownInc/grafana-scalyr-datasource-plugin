@@ -3,7 +3,7 @@
 System.register(['./datasource', './query_ctrl', './config_ctrl'], function (_export, _context) {
   "use strict";
 
-  var GenericDatasource, ScalyrDatasourceQueryCtrl, ScalyrConfigCtrl, GenericQueryOptionsCtrl, GenericAnnotationsQueryCtrl;
+  var ScalyrDatasource, ScalyrDatasourceQueryCtrl, ScalyrConfigCtrl, GenericQueryOptionsCtrl, GenericAnnotationsQueryCtrl;
 
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
@@ -13,7 +13,7 @@ System.register(['./datasource', './query_ctrl', './config_ctrl'], function (_ex
 
   return {
     setters: [function (_datasource) {
-      GenericDatasource = _datasource.GenericDatasource;
+      ScalyrDatasource = _datasource.ScalyrDatasource;
     }, function (_query_ctrl) {
       ScalyrDatasourceQueryCtrl = _query_ctrl.ScalyrDatasourceQueryCtrl;
     }, function (_config_ctrl) {
@@ -32,7 +32,7 @@ System.register(['./datasource', './query_ctrl', './config_ctrl'], function (_ex
 
       GenericAnnotationsQueryCtrl.templateUrl = 'partials/annotations.editor.html';
 
-      _export('Datasource', GenericDatasource);
+      _export('Datasource', ScalyrDatasource);
 
       _export('QueryCtrl', ScalyrDatasourceQueryCtrl);
 

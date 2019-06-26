@@ -36,11 +36,9 @@ System.register([], function (_export, _context) {
         function ScalyrConfigCtrl(datasourceSrv) {
           _classCallCheck(this, ScalyrConfigCtrl);
 
-          console.log(this.current);
           this.datasourceSrv = datasourceSrv;
           this.readKeyExist = this.current.secureJsonFields.hasOwnProperty("readtoken") && this.current.secureJsonFields.readtoken;
           this.writeKeyExist = this.current.secureJsonFields.hasOwnProperty("writetoken") && this.current.secureJsonFields.writetoken;
-          console.log(this);
         }
 
         _createClass(ScalyrConfigCtrl, [{

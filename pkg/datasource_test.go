@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -27,6 +29,7 @@ func Test_convertProxyResponse(t *testing.T) {
 					RefId: "A",
 					Series: []*datasource.TimeSeries{
 						{
+							Name:   "t",
 							Points: convertArrToPoints(),
 						},
 					},
@@ -34,9 +37,96 @@ func Test_convertProxyResponse(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "double query",
+			args: args{
+				jsonBytes: []byte("[{\"target\":\"t\",\"datapoints\":[[3.8053435114503817,1561492043000],[2.0118895966029724,1561492103000],[1.6390176088971269,1561492163000],[1.3170620437956204,1561492223000],[1.4090029041626329,1561492283000],[4.559611829944547,1561492343000],[2.815657715065999,1561492403000],[1.3955393718707327,1561492463000],[1.1595119746949842,1561492523000],[1.4109716410971642,1561492583000],[4.049888641425389,1561492643000],[2.362439024390244,1561492703000],[1.5711662075298436,1561492763000],[0.9704537460429125,1561492823000],[1.6346408109299249,1561492883000],[3.178237921234267,1561492943000],[2.5902939804013068,1561493003000],[1.5239449976292079,1561493063000],[1.857266811279826,1561493123000],[1.4096876414667272,1561493183000],[4.132684652808492,1561493243000],[2.171325518485122,1561493303000],[1.537201684604586,1561493363000],[1.332522303325223,1561493423000],[1.898074213245655,1561493483000],[4.050975177304965,1561493543000],[2.8105769230769226,1561493603000],[1.3910588235294115,1561493663000],[1.2705259175179722,1561493723000],[1.2158756824863501,1561493783000],[3.2966037735849056,1561493843000],[1.687830687830688,1561513043000],[1.759768451519537,1561513103000],[1.8954937679769897,1561513163000],[4.315882874889086,1561513223000],[2.6627469426152395,1561513283000],[1.7570596145226354,1561513343000],[2.0114122681883027,1561513403000],[1.8752345215759854,1561513463000],[3.476145038167939,1561513523000],[2.0405582206716093,1561513583000]],\"queries\":[{\"filter\":\"message contains \\\"error\\\"\",\"function\":\"count\",\"startTime\":\"1561491983\",\"endTime\":\"1561513583\",\"buckets\":360,\"priority\":\"low\"},{\"filter\":\"message contains \\\"success\\\"\",\"function\":\"count\",\"startTime\":\"1561491983\",\"endTime\":\"1561513583\",\"buckets\":360,\"priority\":\"low\"}],\"refId\":\"A\"},{\"target\":\"T3 % Errors\",\"datapoints\":[[39.35565382185723,1561494383000],[28.158923143725577,1561496783000],[0,1561499183000],[18.27005423922352,1561501583000],[29.830021546564517,1561503983000],[242.52120277563606,1561506383000],[12.90271636133923,1561508783000],[74.01696222050886,1561511183000],[0,1561513583000]],\"queries\":[{\"filter\":\"$serverHost = 'testEnvT3' and $logfile = '\\/var\\/log\\/nginx\\/error.log'\",\"function\":\"count\",\"startTime\":\"1561491983\",\"endTime\":\"1561513583\",\"buckets\":9,\"priority\":\"low\"},{\"filter\":\"$serverHost = 'testEnvT3' and $logfile = '\\/var\\/log\\/nginx\\/access.log' and $uriPath != \\\"\\/jspvlen.php\\\" and $uriPath != \\\"\\/healthcheck.php\\\" and $status = 200\",\"function\":\"count\",\"startTime\":\"1561491983\",\"endTime\":\"1561513583\",\"buckets\":9,\"priority\":\"low\"}, \"100\"],\"refId\":\"B\"}]"),
+			},
+			want: []*datasource.QueryResult{
+				{
+					RefId: "A",
+					Series: []*datasource.TimeSeries{
+						{
+							Name: "t",
+							Points: []*datasource.Point{
+								&datasource.Point{Value: 3.805344, Timestamp: 1561492043000},
+								&datasource.Point{Value: 2.011890, Timestamp: 1561492103000},
+								&datasource.Point{Value: 1.639018, Timestamp: 1561492163000},
+								&datasource.Point{Value: 1.317062, Timestamp: 1561492223000},
+								&datasource.Point{Value: 1.409003, Timestamp: 1561492283000},
+								&datasource.Point{Value: 4.559612, Timestamp: 1561492343000},
+								&datasource.Point{Value: 2.815658, Timestamp: 1561492403000},
+								&datasource.Point{Value: 1.395539, Timestamp: 1561492463000},
+								&datasource.Point{Value: 1.159512, Timestamp: 1561492523000},
+								&datasource.Point{Value: 1.410972, Timestamp: 1561492583000},
+								&datasource.Point{Value: 4.049889, Timestamp: 1561492643000},
+								&datasource.Point{Value: 2.362439, Timestamp: 1561492703000},
+								&datasource.Point{Value: 1.571166, Timestamp: 1561492763000},
+								&datasource.Point{Value: 0.970454, Timestamp: 1561492823000},
+								&datasource.Point{Value: 1.634641, Timestamp: 1561492883000},
+								&datasource.Point{Value: 3.178238, Timestamp: 1561492943000},
+								&datasource.Point{Value: 2.590294, Timestamp: 1561493003000},
+								&datasource.Point{Value: 1.523945, Timestamp: 1561493063000},
+								&datasource.Point{Value: 1.857267, Timestamp: 1561493123000},
+								&datasource.Point{Value: 1.409688, Timestamp: 1561493183000},
+								&datasource.Point{Value: 4.132685, Timestamp: 1561493243000},
+								&datasource.Point{Value: 2.171326, Timestamp: 1561493303000},
+								&datasource.Point{Value: 1.537202, Timestamp: 1561493363000},
+								&datasource.Point{Value: 1.332522, Timestamp: 1561493423000},
+								&datasource.Point{Value: 1.898074, Timestamp: 1561493483000},
+								&datasource.Point{Value: 4.050975, Timestamp: 1561493543000},
+								&datasource.Point{Value: 2.810577, Timestamp: 1561493603000},
+								&datasource.Point{Value: 1.391059, Timestamp: 1561493663000},
+								&datasource.Point{Value: 1.270526, Timestamp: 1561493723000},
+								&datasource.Point{Value: 1.215876, Timestamp: 1561493783000},
+								&datasource.Point{Value: 3.296604, Timestamp: 1561493843000},
+								&datasource.Point{Value: 1.687831, Timestamp: 1561513043000},
+								&datasource.Point{Value: 1.759768, Timestamp: 1561513103000},
+								&datasource.Point{Value: 1.895494, Timestamp: 1561513163000},
+								&datasource.Point{Value: 4.315883, Timestamp: 1561513223000},
+								&datasource.Point{Value: 2.662747, Timestamp: 1561513283000},
+								&datasource.Point{Value: 1.757060, Timestamp: 1561513343000},
+								&datasource.Point{Value: 2.011412, Timestamp: 1561513403000},
+								&datasource.Point{Value: 1.875235, Timestamp: 1561513463000},
+								&datasource.Point{Value: 3.476145, Timestamp: 1561513523000},
+								&datasource.Point{Value: 2.040558, Timestamp: 1561513583000},
+							},
+						},
+					},
+				},
+				{
+					RefId: "B",
+					Series: []*datasource.TimeSeries{
+						{
+							Name: "T3 % Errors",
+							Points: []*datasource.Point{
+								&datasource.Point{Value: 39.355654, Timestamp: 1561494383000},
+								&datasource.Point{Value: 28.158923, Timestamp: 1561496783000},
+								&datasource.Point{Value: 0.000000, Timestamp: 1561499183000},
+								&datasource.Point{Value: 18.270054, Timestamp: 1561501583000},
+								&datasource.Point{Value: 29.830022, Timestamp: 1561503983000},
+								&datasource.Point{Value: 242.521203, Timestamp: 1561506383000},
+								&datasource.Point{Value: 12.902716, Timestamp: 1561508783000},
+								&datasource.Point{Value: 74.016962, Timestamp: 1561511183000},
+								&datasource.Point{Value: 0.000000, Timestamp: 1561513583000},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
+
+	var bodyToSend []map[string]interface{}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			err := json.Unmarshal(tt.args.jsonBytes, &bodyToSend)
+			fmt.Print(bodyToSend[0])
+			if err != nil {
+				t.Errorf("Really can't jsonDecode thta shit")
+			}
 			got, err := convertProxyResponse(tt.args.jsonBytes)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("convertProxyResponse() error = %v, wantErr %v", err, tt.wantErr)

@@ -3,7 +3,7 @@
 System.register(["lodash"], function (_export, _context) {
     "use strict";
 
-    var _, _createClass, GenericDatasource;
+    var _, _createClass, ScalyrDatasource;
 
     function _classCallCheck(instance, Constructor) {
         if (!(instance instanceof Constructor)) {
@@ -53,9 +53,9 @@ System.register(["lodash"], function (_export, _context) {
                 };
             }();
 
-            _export("GenericDatasource", GenericDatasource = function () {
-                function GenericDatasource(instanceSettings, $q, backendSrv, templateSrv) {
-                    _classCallCheck(this, GenericDatasource);
+            _export("ScalyrDatasource", ScalyrDatasource = function () {
+                function ScalyrDatasource(instanceSettings, $q, backendSrv, templateSrv) {
+                    _classCallCheck(this, ScalyrDatasource);
 
                     this.datasourceId = instanceSettings.id;
                     this.type = instanceSettings.type;
@@ -65,8 +65,8 @@ System.register(["lodash"], function (_export, _context) {
                     this.backendSrv = backendSrv;
                     this.templateVarIdentifier = '~';
                     this.templateVarEscaperChar = "\\";
-                    this.templateSrv = GenericDatasource.modifyTemplateVariableIdentifier(templateSrv, this.templateVarIdentifier);
-                    this.templateSrv = GenericDatasource.addTemplateVariableEscapeChar(this.templateSrv, this.templateVarEscaperChar, this.templateVarIdentifier);
+                    this.templateSrv = ScalyrDatasource.modifyTemplateVariableIdentifier(templateSrv, this.templateVarIdentifier);
+                    this.templateSrv = ScalyrDatasource.addTemplateVariableEscapeChar(this.templateSrv, this.templateVarEscaperChar, this.templateVarIdentifier);
                     this.withCredentials = instanceSettings.withCredentials;
                     this.headers = { 'Content-Type': 'application/json' };
                     if (typeof instanceSettings.basicAuth === 'string' && instanceSettings.basicAuth.length > 0) {
@@ -83,7 +83,7 @@ System.register(["lodash"], function (_export, _context) {
                     };
                 }
 
-                _createClass(GenericDatasource, [{
+                _createClass(ScalyrDatasource, [{
                     key: "removeEscapeChar",
                     value: function removeEscapeChar(filter) {
                         return filter.replace(RegExp("\\" + this.templateVarEscaperChar + this.templateVarIdentifier, 'g'), this.templateVarIdentifier);
@@ -297,10 +297,10 @@ System.register(["lodash"], function (_export, _context) {
                     }
                 }]);
 
-                return GenericDatasource;
+                return ScalyrDatasource;
             }());
 
-            _export("GenericDatasource", GenericDatasource);
+            _export("ScalyrDatasource", ScalyrDatasource);
         }
     };
 });

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana_plugin_model/go/datasource"
 	"github.com/hashicorp/go-plugin"
 	"io/ioutil"
@@ -15,15 +16,11 @@ type ScalyrDatasource struct {
 	plugin.NetRPCUnsupportedPlugin
 }
 
-type ProxyResponse struct {
-	Target     string
-	Datapoints [][]float64
-	Queries    []map[string]interface{}
-	RefId      string
-}
-
 func (t *ScalyrDatasource) Query(ctx context.Context, tsdbReq *datasource.DatasourceRequest) (*datasource.DatasourceResponse, error) {
-	url := tsdbReq.Datasource.Url + "/query"
+	modelJson, err := simplejson.NewJson([]byte(tsdbReq.Queries[0].ModelJson))
+	if err != nil {
+		return nil, err
+	}
 
 	var bodyToSend map[string]interface{}
 
@@ -115,6 +112,7 @@ func convertProxyResponse(jsonBytes []byte) ([]*datasource.QueryResult, error) {
 		}
 
 		timeSeries := datasource.TimeSeries{
+			Name:   proxyResponse.Target,
 			Points: points,
 		}
 

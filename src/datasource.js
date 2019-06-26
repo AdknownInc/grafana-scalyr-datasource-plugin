@@ -1,8 +1,8 @@
 import _ from "lodash";
 
-export class GenericDatasource {
+export class ScalyrDatasource {
 
-    constructor(instanceSettings, $q, backendSrv, templateSrv) {
+    constructor(instanceSettings, $q, backendSrv, templateSrv, timeSrv) {
         this.datasourceId = instanceSettings.id;
         this.type = instanceSettings.type;
         this.url = instanceSettings.url;
@@ -11,15 +11,16 @@ export class GenericDatasource {
         this.backendSrv = backendSrv;
         this.templateVarIdentifier = '~';
         this.templateVarEscaperChar = "\\";
-        this.templateSrv = GenericDatasource.modifyTemplateVariableIdentifier(templateSrv, this.templateVarIdentifier);
-        this.templateSrv = GenericDatasource.addTemplateVariableEscapeChar(this.templateSrv, this.templateVarEscaperChar, this.templateVarIdentifier);
+        this.templateSrv = ScalyrDatasource.modifyTemplateVariableIdentifier(templateSrv, this.templateVarIdentifier);
+        this.templateSrv = ScalyrDatasource.addTemplateVariableEscapeChar(this.templateSrv, this.templateVarEscaperChar, this.templateVarIdentifier);
+        this.timeSrv = timeSrv;
         this.withCredentials = instanceSettings.withCredentials;
         this.headers = {'Content-Type': 'application/json'};
         if (typeof instanceSettings.basicAuth === 'string' && instanceSettings.basicAuth.length > 0) {
             this.headers['Authorization'] = instanceSettings.basicAuth;
         }
 
-        this.parseComplex = instanceSettings.jsonData.parseQueries;
+        this.parseComplex = instanceSettings.jsonData.parseQueries || false;
 
         this.queryControls = [];
 
@@ -70,18 +71,19 @@ export class GenericDatasource {
     }
 
     query(options) {
-        options.targets = options.targets.filter(t => !t.hide);
+        const query = this.buildQueryParameters(options);
+        query.targets = options.targets.filter(t => !t.hide);
         if (options.targets.length <= 0) {
             return this.q.when({data: []});
         }
         //Deep copy the object. When template variables are swapped out we don't want to modify the original values
-        let query = JSON.parse(JSON.stringify(options));
+        let copy = JSON.parse(JSON.stringify(query));
 
-        for(let i = 0; i < query.targets.length; i++) {
+        for(let i = 0; i < copy.targets.length; i++) {
             this.reverseAllVariables();
-            let filter = this.findAndReverse(query.targets[i].filter);
-            query.targets[i].filter = this.findAndReverse(this.templateSrv.replace(filter, null, 'regex'));
-            query.targets[i].filter = this.removeEscapeChar(query.targets[i].filter);
+            let filter = this.findAndReverse(copy.targets[i].filter);
+            copy.targets[i].filter = this.findAndReverse(this.templateSrv.replace(filter, null, 'regex'));
+            copy.targets[i].filter = this.removeEscapeChar(copy.targets[i].filter);
             this.reverseAllVariables();
         }
 
@@ -114,12 +116,44 @@ export class GenericDatasource {
             }
             return res;
         } );
+
+        //#region old way
+        return this.doRequest({
+            url: this.url + '/query',
+            data: query,
+            method: 'POST'
+        }).then((res) => {
+            //Holds on to the response so that it's accessible by the query controls
+            this.response = res;
+            for(let queryControl of this.queryControls) {
+                queryControl.getComplexParts();
+            }
+            return res;
+        } );
+        //#endregion
+
     }
 
     testDatasource() {
-        return this.doRequest({
-            url: this.url + '/',
-            method: 'GET',
+        let range = this.timeSrv.timeRange();
+        return this.backendSrv.datasourceRequest({
+            url:  '/api/tsdb/query',
+            method: 'POST',
+            data: {
+                from: range.from.valueOf().toString(),
+                to: range.to.valueOf().toString(),
+                queries: [
+                    _.extend(
+                        {
+                            refId: 'metricFindQuery',
+                            datasourceId: this.datasourceId,
+                            queryType: 'metricFindQuery',
+                            subtype: subtype,
+                        },
+                        parameters
+                    ),
+                ],
+            }
         }).then(response => {
             if (response.status === 200) {
                 return {status: "success", message: "Data source is working", title: "Success"};
@@ -127,31 +161,8 @@ export class GenericDatasource {
         });
     }
 
-    annotationQuery(options) {
-        var query = this.templateSrv.replace(options.annotation.query, {}, 'glob');
-        var annotationQuery = {
-            range: options.range,
-            annotation: {
-                name: options.annotation.name,
-                datasource: options.annotation.datasource,
-                enable: options.annotation.enable,
-                iconColor: options.annotation.iconColor,
-                query: query
-            },
-            rangeRaw: options.rangeRaw
-        };
-
-        return this.doRequest({
-            url: this.url + '/annotations',
-            method: 'POST',
-            data: annotationQuery
-        }).then(result => {
-            return result.data;
-        });
-    }
-
     metricFindQuery(query) {
-        var interpolated = {
+        let interpolated = {
             target: this.templateSrv.replace(query, null, 'regex')
         };
 
@@ -176,10 +187,26 @@ export class GenericDatasource {
     doRequest(options) {
         options.withCredentials = this.withCredentials;
         options.headers = this.headers;
-
         this.options = options;
-
         return this.backendSrv.datasourceRequest(options);
+    }
+
+    /**
+     *
+     * @param options TSDBRequestOptions
+     */
+    doTsdbRequest(options) {
+        const tsdbRequestData = {
+            from: options.range.from.valueOf().toString(),
+            to: options.range.to.valueOf().toString(),
+            queries: options.targets,
+        };
+
+        return this.backendSrv.datasourceRequest({
+            url: '/api/tsdb/query',
+            method: 'POST',
+            data: tsdbRequestData
+        });
     }
 
     buildQueryParameters(options) {
@@ -188,16 +215,16 @@ export class GenericDatasource {
             return target.target !== 'select metric';
         });
 
-        var targets = _.map(options.targets, target => {
+        options.targets = _.map(options.targets, target => {
             return {
+                queryType: 'query',
                 target: this.templateSrv.replace(target.target, options.scopedVars, 'regex'),
                 refId: target.refId,
                 hide: target.hide,
-                type: target.type || 'timeserie'
+                type: target.type || 'timeserie',
+                datasourceId: this.datasourceId,
             };
         });
-
-        options.targets = targets;
 
         return options;
     }
