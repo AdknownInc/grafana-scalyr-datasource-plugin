@@ -73,7 +73,7 @@ System.register(["lodash"], function (_export, _context) {
                         this.headers['Authorization'] = instanceSettings.basicAuth;
                     }
 
-                    this.parseComplex = instanceSettings.jsonData.parseQueries;
+                    this.parseComplex = instanceSettings.jsonData.parseQueries || false;
 
                     this.queryControls = [];
 

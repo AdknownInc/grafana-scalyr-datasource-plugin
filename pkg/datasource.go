@@ -18,7 +18,7 @@ type ScalyrDatasource struct {
 type ProxyResponse struct {
 	Target     string
 	Datapoints [][]float64
-	Queries    []map[string]interface{}
+	Queries    json.RawMessage
 	RefId      string
 }
 
@@ -116,12 +116,10 @@ func convertProxyResponse(jsonBytes []byte) ([]*datasource.QueryResult, error) {
 
 		timeSeries := datasource.TimeSeries{
 			Points: points,
+			Name:   proxyResponse.Target,
 		}
 
-		complexQueryParts, err := json.Marshal(proxyResponse.Queries)
-		if err != nil {
-			return nil, err
-		}
+		complexQueryParts := proxyResponse.Queries
 
 		queryResult := datasource.QueryResult{
 			RefId: proxyResponse.RefId,

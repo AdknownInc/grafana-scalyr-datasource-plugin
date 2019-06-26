@@ -94,43 +94,26 @@ export class GenericDatasource {
         //Set in query ctrl constructor
         query.panelName = this.panelName;
 
-        //TODO: fix this such that it doesn't break the world
-        //TODO: once its fixed, reenable the backend and alerts
-        // const tsdbRequest = {
-        //     from: options.range.from.valueOf().toString(),
-        //     to: options.range.to.valueOf().toString(),
-        //     queries: [{
-        //         datasourceId: this.datasourceId,
-        //         backendUse: query,
-        //     }]
-        // };
-        //
-        // return this.backendSrv.datasourceRequest({
-        //     url: '/api/tsdb/query',
-        //     method: 'POST',
-        //     data: tsdbRequest
-        // }).then(handleTsdbResponse).then((res) => {
-        //     this.response = res;
-        //     for(let queryControl of this.queryControls) {
-        //         queryControl.getComplexParts();
-        //     }
-        //     return res;
-        // } );
+        const tsdbRequest = {
+            from: options.range.from.valueOf().toString(),
+            to: options.range.to.valueOf().toString(),
+            queries: [{
+                datasourceId: this.datasourceId,
+                backendUse: query,
+            }]
+        };
 
-        //#region old way
-        return this.doRequest({
-            url: this.url + '/query',
-            data: query,
-            method: 'POST'
-        }).then((res) => {
-            //Holds on to the response so that it's accessible by the query controls
+        return this.backendSrv.datasourceRequest({
+            url: '/api/tsdb/query',
+            method: 'POST',
+            data: tsdbRequest
+        }).then(handleTsdbResponse).then((res) => {
             this.response = res;
             for(let queryControl of this.queryControls) {
                 queryControl.getComplexParts();
             }
             return res;
         } );
-        //#endregion
     }
 
     testDatasource() {

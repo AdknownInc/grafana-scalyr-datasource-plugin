@@ -3,7 +3,7 @@
 System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_export, _context) {
     "use strict";
 
-    var QueryCtrl, _createClass, TIME_INDEX, INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED, ScalyrDatasourceQueryCtrl;
+    var QueryCtrl, _typeof, _createClass, TIME_INDEX, INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED, ScalyrDatasourceQueryCtrl;
 
     function _classCallCheck(instance, Constructor) {
         if (!(instance instanceof Constructor)) {
@@ -40,6 +40,12 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
             QueryCtrl = _appPluginsSdk.QueryCtrl;
         }, function (_cssQueryEditorCss) {}],
         execute: function () {
+            _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+                return typeof obj;
+            } : function (obj) {
+                return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+            };
+
             _createClass = function () {
                 function defineProperties(target, props) {
                     for (var i = 0; i < props.length; i++) {
@@ -150,7 +156,11 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                                 for (var _iterator = data.queries[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
                                     var query = _step.value;
 
-                                    this.queryParts.push(query.function + "(" + query.filter + ")");
+                                    if ((typeof query === 'undefined' ? 'undefined' : _typeof(query)) === "object") {
+                                        this.queryParts.push(query.function + "(" + query.filter + ")");
+                                    } else {
+                                        this.queryParts.push(query);
+                                    }
                                 }
                             } catch (err) {
                                 _didIteratorError = true;

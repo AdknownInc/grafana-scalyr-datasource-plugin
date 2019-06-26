@@ -9,8 +9,8 @@
 
   "metrics": true,
   "annotations": false,
-  "backend": false,
-  "alerting": false,
+  "backend": true,
+  "alerting": true,
   "executable": "grafana-scalyr-datasource-plugin",
 
   "info": {

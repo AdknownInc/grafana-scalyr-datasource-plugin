@@ -90,7 +90,11 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
 
             this.queryParts = [];
             for (let query of data.queries) {
-                this.queryParts.push(query.function + "(" + query.filter + ")");
+                if(typeof query === "object") {
+                    this.queryParts.push(query.function + "(" + query.filter + ")");
+                } else {
+                    this.queryParts.push(query);
+                }
             }
         }
     }
