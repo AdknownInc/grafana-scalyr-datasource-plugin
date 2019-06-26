@@ -127,6 +127,8 @@ System.register(["lodash"], function (_export, _context) {
                             query.targets[i].filter = this.findAndReverse(this.templateSrv.replace(filter, null, 'regex'));
                             query.targets[i].filter = this.removeEscapeChar(query.targets[i].filter);
                             this.reverseAllVariables();
+
+                            query.targets[i].filter = this.templateSrv.replace(query.targets[i].filter, null, 'regex');
                         }
 
                         query.parseComplex = this.parseComplex;
