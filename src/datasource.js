@@ -116,6 +116,22 @@ export class GenericDatasource {
             }
             return res;
         } );
+
+        //#region old way
+        //kept in for faster reverts if need be
+        // return this.doRequest({
+        //     url: this.url + '/query',
+        //     data: query,
+        //     method: 'POST'
+        // }).then((res) => {
+        //     //Holds on to the response so that it's accessible by the query controls
+        //     this.response = res;
+        //     for(let queryControl of this.queryControls) {
+        //         queryControl.getComplexParts();
+        //     }
+        //     return res;
+        // } );
+        //#endregion
     }
 
     testDatasource() {
