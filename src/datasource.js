@@ -84,7 +84,11 @@ export class GenericDatasource {
             query.targets[i].filter = this.removeEscapeChar(query.targets[i].filter);
             this.reverseAllVariables();
 
+            //Run through forwards for square bracket variable syntax
             query.targets[i].filter = this.templateSrv.replace(query.targets[i].filter, null, 'regex');
+
+            //Grafana adds regex escapes to the variables for some reason
+            query.targets[i].filter = query.targets[i].filter.replace(/\\(.)/g, "$1");
         }
 
         query.parseComplex = this.parseComplex;
