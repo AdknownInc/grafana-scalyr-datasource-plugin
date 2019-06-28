@@ -128,7 +128,11 @@ System.register(["lodash"], function (_export, _context) {
                             query.targets[i].filter = this.removeEscapeChar(query.targets[i].filter);
                             this.reverseAllVariables();
 
+                            //Run through forwards for square bracket variable syntax
                             query.targets[i].filter = this.templateSrv.replace(query.targets[i].filter, null, 'regex');
+
+                            //Grafana adds regex escapes to the variables for some reason
+                            query.targets[i].filter = query.targets[i].filter.replace(/\\(.)/g, "$1");
                         }
 
                         query.parseComplex = this.parseComplex;
@@ -149,39 +153,86 @@ System.register(["lodash"], function (_export, _context) {
                             }]
                         };
 
+                        //This is needed because Grafana messes up the ordering when moving the response from backend to frontend
+                        var refIdMap = [];
+
+                        var _iteratorNormalCompletion = true;
+                        var _didIteratorError = false;
+                        var _iteratorError = undefined;
+
+                        try {
+                            for (var _iterator = query.targets[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                                var target = _step.value;
+
+                                refIdMap.push(target.refId);
+                            }
+                        } catch (err) {
+                            _didIteratorError = true;
+                            _iteratorError = err;
+                        } finally {
+                            try {
+                                if (!_iteratorNormalCompletion && _iterator.return) {
+                                    _iterator.return();
+                                }
+                            } finally {
+                                if (_didIteratorError) {
+                                    throw _iteratorError;
+                                }
+                            }
+                        }
+
                         return this.backendSrv.datasourceRequest({
                             url: '/api/tsdb/query',
                             method: 'POST',
                             data: tsdbRequest
                         }).then(handleTsdbResponse).then(function (res) {
+                            res.data.sort(function (a, b) {
+                                return refIdMap.indexOf(a.refId) > refIdMap.indexOf(b.refId);
+                            });
                             _this.response = res;
-                            var _iteratorNormalCompletion = true;
-                            var _didIteratorError = false;
-                            var _iteratorError = undefined;
+                            var _iteratorNormalCompletion2 = true;
+                            var _didIteratorError2 = false;
+                            var _iteratorError2 = undefined;
 
                             try {
-                                for (var _iterator = _this.queryControls[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                                    var queryControl = _step.value;
+                                for (var _iterator2 = _this.queryControls[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                                    var queryControl = _step2.value;
 
                                     queryControl.getComplexParts();
                                 }
                             } catch (err) {
-                                _didIteratorError = true;
-                                _iteratorError = err;
+                                _didIteratorError2 = true;
+                                _iteratorError2 = err;
                             } finally {
                                 try {
-                                    if (!_iteratorNormalCompletion && _iterator.return) {
-                                        _iterator.return();
+                                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                                        _iterator2.return();
                                     }
                                 } finally {
-                                    if (_didIteratorError) {
-                                        throw _iteratorError;
+                                    if (_didIteratorError2) {
+                                        throw _iteratorError2;
                                     }
                                 }
                             }
 
                             return res;
                         });
+
+                        //#region old way
+                        //kept in for faster reverts if need be
+                        // return this.doRequest({
+                        //     url: this.url + '/query',
+                        //     data: query,
+                        //     method: 'POST'
+                        // }).then((res) => {
+                        //     //Holds on to the response so that it's accessible by the query controls
+                        //     this.response = res;
+                        //     for(let queryControl of this.queryControls) {
+                        //         queryControl.getComplexParts();
+                        //     }
+                        //     return res;
+                        // } );
+                        //#endregion
                     }
                 }, {
                     key: "testDatasource",
