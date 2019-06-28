@@ -22,11 +22,17 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
         this.intervalTypes = [
             INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED
         ];
+        this.divideByZeroOptions = [
+            'negative_one',
+            'infinity',
+            'null'
+        ];
         this.supportedIntervalTypes = [
             'minute', 'hour', 'day', 'week', 'month'
         ];
         this.target.graphFunction = this.target.graphFunction || this.graphFunctions[0];
         this.target.intervalType = this.target.intervalType || this.intervalTypes[0];
+        this.target.divideByZeroOption = this.target.divideByZeroOption || this.divideByZeroOptions[0];
         this.target.chosenType = this.target.chosenType || this.supportedIntervalTypes[0];
         this.queryTypes = [
             'numeric query',

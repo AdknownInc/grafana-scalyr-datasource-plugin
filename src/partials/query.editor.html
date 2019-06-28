@@ -172,6 +172,21 @@
                 </div>
             </div>
         </div>
+        <div class="gf-form-inline">
+            <div class="gf-form">
+                <label class="gf-form-label width-10">Divide By Zero Option
+                    <info-popover mode="left-absolute">
+                        <p>Specify what result is used in complex queries when the divisor is zero</p>
+                        <span ng-show="ctrl.target.divideByZeroOption === 'fixed'">Selected interval type is <em>Fixed</em>, this means data will be grouped up to the nearest {{ctrl.target.chosenType}}</span>
+                    </info-popover>
+                </label>
+                <div class="gf-form-select-wrapper">
+                    <select class="gf-form-input input-small width-10" ng-model="ctrl.target.divideByZeroOption"
+                            ng-change="ctrl.onChangeInternal()"
+                            ng-options="f as f for f in ctrl.divideByZeroOptions"></select>
+                </div>
+            </div>
+        </div>
     </div>
 
 </query-editor-row>
