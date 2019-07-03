@@ -109,11 +109,22 @@ export class GenericDatasource {
             }]
         };
 
+        //This is needed because Grafana messes up the ordering when moving the response from backend to frontend
+        let refIdMap = [];
+
+        for(let target of query.targets) {
+            refIdMap.push(target.refId)
+        }
+
+
         return this.backendSrv.datasourceRequest({
             url: '/api/tsdb/query',
             method: 'POST',
             data: tsdbRequest
         }).then(handleTsdbResponse).then((res) => {
+            res.data.sort((a, b) => {
+                return refIdMap.indexOf(a.refId) > refIdMap.indexOf(b.refId);
+            });
             this.response = res;
             for(let queryControl of this.queryControls) {
                 queryControl.getComplexParts();
