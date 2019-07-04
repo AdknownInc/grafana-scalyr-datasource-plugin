@@ -49,12 +49,12 @@ export class ScalyrDatasource {
     }
 
     removeEscapeChar(filter) {
-        return filter.replace(RegExp("\\" + this.templateVarEscaperChar + this.templateVarIdentifier,'g'), this.templateVarIdentifier);
+        return filter.replace(RegExp("\\" + this.templateVarEscaperChar + this.templateVarIdentifier, 'g'), this.templateVarIdentifier);
     }
 
     findAndReverse(filter) {
         let newFilter = filter.reverse();
-        return newFilter.replace(RegExp(`(\\w+)(?=${this.templateVarIdentifier}(?!\\${this.templateVarEscaperChar}))`,'g'), function (a,b){
+        return newFilter.replace(RegExp(`(\\w+)(?=${this.templateVarIdentifier}(?!\\${this.templateVarEscaperChar}))`, 'g'), function (a, b) {
             return b.reverse();
         });
     }
@@ -71,106 +71,87 @@ export class ScalyrDatasource {
     }
 
     query(options) {
-        const query = this.buildQueryParameters(options);
-        query.targets = options.targets.filter(t => !t.hide);
+        const parsedOptions = this.buildQueryParameters(options);
+        parsedOptions.targets = options.targets.filter(t => !t.hide);
         if (options.targets.length <= 0) {
             return this.q.when({data: []});
         }
         //Deep copy the object. When template variables are swapped out we don't want to modify the original values
-        let copy = JSON.parse(JSON.stringify(query));
+        let finalOptions = JSON.parse(JSON.stringify(parsedOptions));
 
-        for(let i = 0; i < copy.targets.length; i++) {
+        for (let i = 0; i < finalOptions.targets.length; i++) {
             this.reverseAllVariables();
-            let filter = this.findAndReverse(copy.targets[i].filter);
-            copy.targets[i].filter = this.findAndReverse(this.templateSrv.replace(filter, null, 'regex'));
-            copy.targets[i].filter = this.removeEscapeChar(copy.targets[i].filter);
+            let filter = this.findAndReverse(finalOptions.targets[i].filter);
+            finalOptions.targets[i].filter = this.findAndReverse(this.templateSrv.replace(filter, null, 'regex'));
+            finalOptions.targets[i].filter = this.removeEscapeChar(finalOptions.targets[i].filter);
             this.reverseAllVariables();
+
+            //Run through forwards for square bracket variable syntax
+            finalOptions.targets[i].filter = this.templateSrv.replace(finalOptions.targets[i].filter, null, 'regex');
+
+            //Grafana adds regex escapes to the variables for some reason
+            finalOptions.targets[i].filter = finalOptions.targets[i].filter.replace(/\\(.)/g, "$1");
         }
 
-        query.parseComplex = this.parseComplex;
+        finalOptions.parseComplex = this.parseComplex;
 
-        query.user = this.backendSrv.contextSrv.user.name;
-        query.userId = this.backendSrv.contextSrv.user.id;
-        query.org = this.backendSrv.contextSrv.user.orgName;
-        query.orgId = this.backendSrv.contextSrv.user.orgId;
+        finalOptions.user = this.backendSrv.contextSrv.user.name;
+        finalOptions.userId = this.backendSrv.contextSrv.user.id;
+        finalOptions.org = this.backendSrv.contextSrv.user.orgName;
+        finalOptions.orgId = this.backendSrv.contextSrv.user.orgId;
         //Set in query ctrl constructor
-        query.panelName = this.panelName;
+        finalOptions.panelName = this.panelName;
 
         const tsdbRequest = {
             from: options.range.from.valueOf().toString(),
             to: options.range.to.valueOf().toString(),
             queries: [{
                 datasourceId: this.datasourceId,
-                backendUse: query,
+                backendUse: parsedOptions,
             }]
         };
 
-        return this.backendSrv.datasourceRequest({
-            url: '/api/tsdb/query',
-            method: 'POST',
-            data: tsdbRequest
-        }).then(handleTsdbResponse).then((res) => {
+        //This is needed because Grafana messes up the ordering when moving the response from backend to frontend
+        let refIdMap = _.map(options.targets, target => target.refId);
+
+        return this.doTsdbRequest(finalOptions)
+        .then(handleTsdbResponse).then((res) => {
+            res.data.sort((a, b) => {
+                return refIdMap.indexOf(a.refId) > refIdMap.indexOf(b.refId);
+            });
             this.response = res;
-            for(let queryControl of this.queryControls) {
+            for (let queryControl of this.queryControls) {
                 queryControl.getComplexParts();
             }
             return res;
-        } );
-
-        //#region old way
-        return this.doRequest({
-            url: this.url + '/query',
-            data: query,
-            method: 'POST'
-        }).then((res) => {
-            //Holds on to the response so that it's accessible by the query controls
-            this.response = res;
-            for(let queryControl of this.queryControls) {
-                queryControl.getComplexParts();
-            }
-            return res;
-        } );
-        //#endregion
-
+        });
     }
 
     testDatasource() {
-        let range = this.timeSrv.timeRange();
-        return this.backendSrv.datasourceRequest({
-            url:  '/api/tsdb/query',
-            method: 'POST',
-            data: {
-                from: range.from.valueOf().toString(),
-                to: range.to.valueOf().toString(),
-                queries: [
-                    _.extend(
-                        {
-                            refId: 'metricFindQuery',
-                            datasourceId: this.datasourceId,
-                            queryType: 'metricFindQuery',
-                            subtype: subtype,
-                        },
-                        parameters
-                    ),
-                ],
-            }
-        }).then(response => {
-            if (response.status === 200) {
-                return {status: "success", message: "Data source is working", title: "Success"};
-            }
+        return this.doMetricQueryRequest('test_datasource', {}
+        ).then(response => {
+            return this.q.when({status: "success", message: "Data source is working", title: "Success"});
+        }).catch(err => {
+            return {status: "error", message: err.message, title: "Error"};
         });
     }
 
     metricFindQuery(query) {
-        let interpolated = {
-            target: this.templateSrv.replace(query, null, 'regex')
-        };
+        let serverHostsQuery = query.match(/^server_hosts\(\)/);
+        if (serverHostsQuery) {
+            return this.doMetricQueryRequest('server_hosts', {
+            });
+        }
 
-        return this.doRequest({
-            url: this.url + '/search',
-            data: interpolated,
-            method: 'POST',
-        }).then(this.mapToTextValue);
+        let logFilesQuery = query.match(/^log_files\((.+)\)/);
+        if (logFilesQuery) {
+            let serverHost = logFilesQuery[1];
+            return this.doMetricQueryRequest('named_query_queries', {
+                serverHost: this.templateSrv.replace(serverHost)
+            });
+        }
+
+        return this.q.when([]);
     }
 
     mapToTextValue(result) {
@@ -221,12 +202,46 @@ export class ScalyrDatasource {
                 target: this.templateSrv.replace(target.target, options.scopedVars, 'regex'),
                 refId: target.refId,
                 hide: target.hide,
-                type: target.type || 'timeserie',
+                subtype: target.type || 'timeserie',
                 datasourceId: this.datasourceId,
             };
         });
 
         return options;
+    }
+
+    doMetricQueryRequest(subtype, parameters) {
+        let range = this.timeSrv.timeRange();
+        return this.backendSrv.datasourceRequest({
+            url: '/api/tsdb/query',
+            method: 'POST',
+            data: {
+                from: range.from.valueOf().toString(),
+                to: range.to.valueOf().toString(),
+                queries: [
+                    _.extend(
+                        {
+                            refId: 'metricFindQuery',
+                            datasourceId: this.datasourceId,
+                            queryType: 'metricFindQuery',
+                            subtype: subtype,
+                        },
+                        parameters
+                    ),
+                ],
+            }
+        }).then(r => {
+            return ScalyrDatasource.transformSuggestDataFromTable(r.data);
+        });
+    }
+
+    static transformSuggestDataFromTable(suggestData) {
+        return _.map(suggestData.results['metricFindQuery'].tables[0].rows, v => {
+            return {
+                text: v[0],
+                value: v[1],
+            };
+        });
     }
 }
 

@@ -2,16 +2,16 @@ export class ScalyrConfigCtrl {
 
   constructor(datasourceSrv) {
     this.datasourceSrv = datasourceSrv;
-    this.readKeyExist = this.current.secureJsonFields.hasOwnProperty("readtoken") && this.current.secureJsonFields.readtoken;
-    this.writeKeyExist = this.current.secureJsonFields.hasOwnProperty("writetoken") && this.current.secureJsonFields.writetoken;
+    this.readLogKeyExist = this.current.secureJsonFields.hasOwnProperty("readlogtoken") && this.current.secureJsonFields.readlogtoken;
+    this.readConfigKeyExist = this.current.secureJsonFields.hasOwnProperty("readconfigtoken") && this.current.secureJsonFields.readconfigtoken;
   }
 
-  resetReadKey() {
-    this.readKeyExist = false;
+  resetReadLogKey() {
+    this.readLogKeyExist = false;
   }
 
-  resetWriteKey() {
-    this.writeKeyExist = false;
+  resetReadConfigKey() {
+    this.readConfigKeyExist = false;
   }
 }
 

@@ -48,12 +48,12 @@
       "url": "{{.JsonData.url}}/query",
       "headers": [
         {
-          "name": "X-SCALYR-READ-KEY",
-          "content": "{{.SecureJsonData.readtoken}}"
+          "name": "X-SCALYR-READ-LOG-KEY",
+          "content": "{{.SecureJsonData.readlogtoken}}"
         },
         {
-          "name": "X-SCALYR-WRITE-KEY",
-          "content": "{{.SecureJsonData.writetoken}}"
+          "name": "X-SCALYR-READ-CONFIG-KEY",
+          "content": "{{.SecureJsonData.readconfigtoken}}"
         }
       ]
     }

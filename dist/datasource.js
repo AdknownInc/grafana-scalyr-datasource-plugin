@@ -54,7 +54,7 @@ System.register(["lodash"], function (_export, _context) {
             }();
 
             _export("ScalyrDatasource", ScalyrDatasource = function () {
-                function ScalyrDatasource(instanceSettings, $q, backendSrv, templateSrv) {
+                function ScalyrDatasource(instanceSettings, $q, backendSrv, templateSrv, timeSrv) {
                     _classCallCheck(this, ScalyrDatasource);
 
                     this.datasourceId = instanceSettings.id;
@@ -67,13 +67,14 @@ System.register(["lodash"], function (_export, _context) {
                     this.templateVarEscaperChar = "\\";
                     this.templateSrv = ScalyrDatasource.modifyTemplateVariableIdentifier(templateSrv, this.templateVarIdentifier);
                     this.templateSrv = ScalyrDatasource.addTemplateVariableEscapeChar(this.templateSrv, this.templateVarEscaperChar, this.templateVarIdentifier);
+                    this.timeSrv = timeSrv;
                     this.withCredentials = instanceSettings.withCredentials;
                     this.headers = { 'Content-Type': 'application/json' };
                     if (typeof instanceSettings.basicAuth === 'string' && instanceSettings.basicAuth.length > 0) {
                         this.headers['Authorization'] = instanceSettings.basicAuth;
                     }
 
-                    this.parseComplex = instanceSettings.jsonData.parseQueries;
+                    this.parseComplex = instanceSettings.jsonData.parseQueries || false;
 
                     this.queryControls = [];
 
@@ -112,46 +113,57 @@ System.register(["lodash"], function (_export, _context) {
                     value: function query(options) {
                         var _this = this;
 
-                        options.targets = options.targets.filter(function (t) {
+                        var parsedOptions = this.buildQueryParameters(options);
+                        parsedOptions.targets = options.targets.filter(function (t) {
                             return !t.hide;
                         });
                         if (options.targets.length <= 0) {
                             return this.q.when({ data: [] });
                         }
                         //Deep copy the object. When template variables are swapped out we don't want to modify the original values
-                        var query = JSON.parse(JSON.stringify(options));
+                        var finalOptions = JSON.parse(JSON.stringify(parsedOptions));
 
-                        for (var i = 0; i < query.targets.length; i++) {
+                        for (var i = 0; i < finalOptions.targets.length; i++) {
                             this.reverseAllVariables();
-                            var filter = this.findAndReverse(query.targets[i].filter);
-                            query.targets[i].filter = this.findAndReverse(this.templateSrv.replace(filter, null, 'regex'));
-                            query.targets[i].filter = this.removeEscapeChar(query.targets[i].filter);
+                            var filter = this.findAndReverse(finalOptions.targets[i].filter);
+                            finalOptions.targets[i].filter = this.findAndReverse(this.templateSrv.replace(filter, null, 'regex'));
+                            finalOptions.targets[i].filter = this.removeEscapeChar(finalOptions.targets[i].filter);
                             this.reverseAllVariables();
+
+                            //Run through forwards for square bracket variable syntax
+                            finalOptions.targets[i].filter = this.templateSrv.replace(finalOptions.targets[i].filter, null, 'regex');
+
+                            //Grafana adds regex escapes to the variables for some reason
+                            finalOptions.targets[i].filter = finalOptions.targets[i].filter.replace(/\\(.)/g, "$1");
                         }
 
-                        query.parseComplex = this.parseComplex;
+                        finalOptions.parseComplex = this.parseComplex;
 
-                        query.user = this.backendSrv.contextSrv.user.name;
-                        query.userId = this.backendSrv.contextSrv.user.id;
-                        query.org = this.backendSrv.contextSrv.user.orgName;
-                        query.orgId = this.backendSrv.contextSrv.user.orgId;
+                        finalOptions.user = this.backendSrv.contextSrv.user.name;
+                        finalOptions.userId = this.backendSrv.contextSrv.user.id;
+                        finalOptions.org = this.backendSrv.contextSrv.user.orgName;
+                        finalOptions.orgId = this.backendSrv.contextSrv.user.orgId;
                         //Set in query ctrl constructor
-                        query.panelName = this.panelName;
+                        finalOptions.panelName = this.panelName;
 
                         var tsdbRequest = {
                             from: options.range.from.valueOf().toString(),
                             to: options.range.to.valueOf().toString(),
                             queries: [{
                                 datasourceId: this.datasourceId,
-                                backendUse: query
+                                backendUse: parsedOptions
                             }]
                         };
 
-                        return this.backendSrv.datasourceRequest({
-                            url: '/api/tsdb/query',
-                            method: 'POST',
-                            data: tsdbRequest
-                        }).then(handleTsdbResponse).then(function (res) {
+                        //This is needed because Grafana messes up the ordering when moving the response from backend to frontend
+                        var refIdMap = _.map(options.targets, function (target) {
+                            return target.refId;
+                        });
+
+                        return this.doTsdbRequest(finalOptions).then(handleTsdbResponse).then(function (res) {
+                            res.data.sort(function (a, b) {
+                                return refIdMap.indexOf(a.refId) > refIdMap.indexOf(b.refId);
+                            });
                             _this.response = res;
                             var _iteratorNormalCompletion = true;
                             var _didIteratorError = false;
@@ -184,51 +196,31 @@ System.register(["lodash"], function (_export, _context) {
                 }, {
                     key: "testDatasource",
                     value: function testDatasource() {
-                        return this.doRequest({
-                            url: this.url + '/',
-                            method: 'GET'
-                        }).then(function (response) {
-                            if (response.status === 200) {
-                                return { status: "success", message: "Data source is working", title: "Success" };
-                            }
-                        });
-                    }
-                }, {
-                    key: "annotationQuery",
-                    value: function annotationQuery(options) {
-                        var query = this.templateSrv.replace(options.annotation.query, {}, 'glob');
-                        var annotationQuery = {
-                            range: options.range,
-                            annotation: {
-                                name: options.annotation.name,
-                                datasource: options.annotation.datasource,
-                                enable: options.annotation.enable,
-                                iconColor: options.annotation.iconColor,
-                                query: query
-                            },
-                            rangeRaw: options.rangeRaw
-                        };
+                        var _this2 = this;
 
-                        return this.doRequest({
-                            url: this.url + '/annotations',
-                            method: 'POST',
-                            data: annotationQuery
-                        }).then(function (result) {
-                            return result.data;
+                        return this.doMetricQueryRequest('test_datasource', {}).then(function (response) {
+                            return _this2.q.when({ status: "success", message: "Data source is working", title: "Success" });
+                        }).catch(function (err) {
+                            return { status: "error", message: err.message, title: "Error" };
                         });
                     }
                 }, {
                     key: "metricFindQuery",
                     value: function metricFindQuery(query) {
-                        var interpolated = {
-                            target: this.templateSrv.replace(query, null, 'regex')
-                        };
+                        var serverHostsQuery = query.match(/^server_hosts\(\)/);
+                        if (serverHostsQuery) {
+                            return this.doMetricQueryRequest('server_hosts', {});
+                        }
 
-                        return this.doRequest({
-                            url: this.url + '/search',
-                            data: interpolated,
-                            method: 'POST'
-                        }).then(this.mapToTextValue);
+                        var logFilesQuery = query.match(/^log_files\((.+)\)/);
+                        if (logFilesQuery) {
+                            var serverHost = logFilesQuery[1];
+                            return this.doMetricQueryRequest('named_query_queries', {
+                                serverHost: this.templateSrv.replace(serverHost)
+                            });
+                        }
+
+                        return this.q.when([]);
                     }
                 }, {
                     key: "mapToTextValue",
@@ -247,33 +239,67 @@ System.register(["lodash"], function (_export, _context) {
                     value: function doRequest(options) {
                         options.withCredentials = this.withCredentials;
                         options.headers = this.headers;
-
                         this.options = options;
-
                         return this.backendSrv.datasourceRequest(options);
+                    }
+                }, {
+                    key: "doTsdbRequest",
+                    value: function doTsdbRequest(options) {
+                        var tsdbRequestData = {
+                            from: options.range.from.valueOf().toString(),
+                            to: options.range.to.valueOf().toString(),
+                            queries: options.targets
+                        };
+
+                        return this.backendSrv.datasourceRequest({
+                            url: '/api/tsdb/query',
+                            method: 'POST',
+                            data: tsdbRequestData
+                        });
                     }
                 }, {
                     key: "buildQueryParameters",
                     value: function buildQueryParameters(options) {
-                        var _this2 = this;
+                        var _this3 = this;
 
                         //remove placeholder targets
                         options.targets = _.filter(options.targets, function (target) {
                             return target.target !== 'select metric';
                         });
 
-                        var targets = _.map(options.targets, function (target) {
+                        options.targets = _.map(options.targets, function (target) {
                             return {
-                                target: _this2.templateSrv.replace(target.target, options.scopedVars, 'regex'),
+                                queryType: 'query',
+                                target: _this3.templateSrv.replace(target.target, options.scopedVars, 'regex'),
                                 refId: target.refId,
                                 hide: target.hide,
-                                type: target.type || 'timeserie'
+                                subtype: target.type || 'timeserie',
+                                datasourceId: _this3.datasourceId
                             };
                         });
 
-                        options.targets = targets;
-
                         return options;
+                    }
+                }, {
+                    key: "doMetricQueryRequest",
+                    value: function doMetricQueryRequest(subtype, parameters) {
+                        var range = this.timeSrv.timeRange();
+                        return this.backendSrv.datasourceRequest({
+                            url: '/api/tsdb/query',
+                            method: 'POST',
+                            data: {
+                                from: range.from.valueOf().toString(),
+                                to: range.to.valueOf().toString(),
+                                queries: [_.extend({
+                                    refId: 'metricFindQuery',
+                                    datasourceId: this.datasourceId,
+                                    queryType: 'metricFindQuery',
+                                    subtype: subtype
+                                }, parameters)]
+                            }
+                        }).then(function (r) {
+                            return ScalyrDatasource.transformSuggestDataFromTable(r.data);
+                        });
                     }
                 }], [{
                     key: "modifyTemplateVariableIdentifier",
@@ -294,6 +320,16 @@ System.register(["lodash"], function (_export, _context) {
                         regStr = regStr.replace(RegExp(identifier + "\\(\\\\w\\+\\)", 'g'), "(\\w+)" + identifier + "(?=[^" + ("\\" + escape) + "]|$)");
                         templateSrv.regex = new RegExp(regStr, 'g');
                         return templateSrv;
+                    }
+                }, {
+                    key: "transformSuggestDataFromTable",
+                    value: function transformSuggestDataFromTable(suggestData) {
+                        return _.map(suggestData.results['metricFindQuery'].tables[0].rows, function (v) {
+                            return {
+                                text: v[0],
+                                value: v[1]
+                            };
+                        });
                     }
                 }]);
 

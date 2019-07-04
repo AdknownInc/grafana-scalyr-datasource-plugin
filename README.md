@@ -12,7 +12,7 @@ It has a type of `Custom` with the values as `missing required,unauthorized acce
 
 The selected value of `grafana_var_name` for our dashboard is `cache miss`
 
-If we set the query as: `$someScalyrField contains "~grafana_var_name~`
+If we set the query as: `$someScalyrField contains "~grafana_var_name`
 
 Then the query passed to scalyr will be: `$someScalyrField contains "cache miss"`
 
