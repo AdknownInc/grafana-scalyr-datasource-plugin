@@ -187,7 +187,7 @@ System.register(["lodash"], function (_export, _context) {
                             data: tsdbRequest
                         }).then(handleTsdbResponse).then(function (res) {
                             res.data.sort(function (a, b) {
-                                return refIdMap.indexOf(a.refId) > refIdMap.indexOf(b.refId);
+                                return refIdMap.indexOf(a.refId) - refIdMap.indexOf(b.refId);
                             });
                             _this.response = res;
                             var _iteratorNormalCompletion2 = true;
