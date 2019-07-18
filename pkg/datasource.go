@@ -111,6 +111,8 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 	if err != nil {
 		return nil, err
 	}
+
+	//TODO: call svc.stuff here
 	for _, target := range targets {
 		switch target.ScalyrQueryType {
 		case ScalyrQueryFacet:
