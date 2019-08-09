@@ -24,3 +24,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/grafana/grafana_plugin_model"
+
+[[constraint]]
+  name = "github.com/teris-io/shortid"
+  version = "1.0.0"

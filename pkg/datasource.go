@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"github.com/aws/aws-sdk-go/service/athena"
+	"fmt"
+	"github.com/adknowninc/grafana-scalyr-datasource-plugin/pkg/scalyr"
 	"github.com/grafana/grafana/pkg/components/simplejson"
+	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana_plugin_model/go/datasource"
 	"github.com/hashicorp/go-plugin"
-	"math"
-	"regexp"
+	"github.com/pkg/errors"
 	"sort"
 	"strconv"
 	"time"
@@ -88,6 +88,7 @@ func (t *ScalyrDatasource) Query(ctx context.Context, tsdbReq *datasource.Dataso
 func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*datasource.DatasourceResponse, error) {
 	response := &datasource.DatasourceResponse{}
 
+	//create the targets from the initial queries
 	targets := make([]Target, 0)
 	for _, query := range tsdbReq.Queries {
 		target := Target{}
@@ -97,6 +98,7 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 		targets = append(targets, target)
 	}
 
+	//setup some parameters and the scalyr service
 	fromRaw, err := strconv.ParseInt(tsdbReq.TimeRange.FromRaw, 10, 64)
 	if err != nil {
 		return nil, err
@@ -112,140 +114,79 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 		return nil, err
 	}
 
-	//TODO: call svc.stuff here
+	//parse the
 	for _, target := range targets {
-		switch target.ScalyrQueryType {
-		case ScalyrQueryFacet:
-			r, err := parseTimeSeriesResponse(resp, target.RefId, from, to, target.TimestampColumn, target.ValueColumn, target.LegendFormat)
-			if err != nil {
-				return nil, err
-			}
-			response.Results = append(response.Results, r)
-		case ScalyrQueryNumerical:
-			r, err := parseTableResponse(resp, target.RefId, from, to, target.TimestampColumn)
-			if err != nil {
-				return nil, err
-			}
-			response.Results = append(response.Results, r)
-		case ScalyrQueryComplexNumerical:
+		buckets, err := scalyr.GetBuckets(from, to, target.SecondsInterval)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("Error with target %s", target.RefId))
+		}
 
+		switch target.ScalyrQueryType {
+		case ScalyrQueryNumerical:
+			resp, err := svc.TimeSeriesQuery([]scalyr.TimeseriesQuery{
+				{
+					Filter:    target.Filter,
+					Buckets:   buckets,
+					Function:  target.GraphFunction,
+					StartTime: strconv.FormatInt(from.Unix(), 10),
+					EndTime:   strconv.FormatInt(to.Unix(), 10),
+					Priority:  "low",
+				},
+			})
+			r, err := parseTimeSeriesResponse(resp, target.RefId, from, to, target.SecondsInterval)
+			if err != nil {
+				return nil, err
+			}
+			response.Results = append(response.Results, r)
 		}
 	}
 
 	return response, nil
 }
 
-func (t *ScalyrDatasource) metricFindQuery(ctx context.Context, tsdbReq *datasource.DatasourceRequest, parameters *simplejson.Json, timeRange *datasource.TimeRange) (*datasource.DatasourceResponse, error) {
-	region := parameters.Get("region").MustString()
-	svc, err := t.getClient(tsdbReq.Datasource, region)
-	if err != nil {
-		return nil, err
+func parseTimeSeriesResponse(resp *scalyr.TimeseriesQueryResponse, refId string, from time.Time, to time.Time, secondsInterval int) (*datasource.QueryResult, error) {
+	series := &datasource.TimeSeries{}
+
+	startTime := from.Unix() * 1000
+	endTime := startTime + int64(secondsInterval)
+	for _, r := range resp.Results {
+		for _, val := range r.Values {
+			series.Points = append(series.Points, &datasource.Point{
+				Timestamp: endTime,
+				Value:     val,
+			})
+			if endTime > to.Unix() {
+				log.Warn("Set a datapoint to be outside the range of the end value. datapoint ts: %d, end value: %d", endTime, to.Unix())
+			}
+			endTime += int64(secondsInterval)
+		}
 	}
+
+	s := make([]*datasource.TimeSeries, 0)
+	sort.Slice(series.Points, func(i, j int) bool {
+		return series.Points[i].Timestamp < series.Points[j].Timestamp
+	})
+	s = append(s, series)
+
+	return &datasource.QueryResult{
+		RefId:  refId,
+		Series: s,
+	}, nil
+}
+
+func (t *ScalyrDatasource) metricFindQuery(ctx context.Context, tsdbReq *datasource.DatasourceRequest, parameters *simplejson.Json, timeRange *datasource.TimeRange) (*datasource.DatasourceResponse, error) {
+	//svc, err := t.getClient(tsdbReq.Datasource)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	subtype := parameters.Get("subtype").MustString()
 
 	data := make([]suggestData, 0)
 	switch subtype {
 	case "named_query_names":
-		li := &athena.ListNamedQueriesInput{}
-		lo := &athena.ListNamedQueriesOutput{}
-		err = svc.ListNamedQueriesPages(li,
-			func(page *athena.ListNamedQueriesOutput, lastPage bool) bool {
-				lo.NamedQueryIds = append(lo.NamedQueryIds, page.NamedQueryIds...)
-				return !lastPage
-			})
-		if err != nil {
-			return nil, err
-		}
-		for i := 0; i < len(lo.NamedQueryIds); i += 50 {
-			e := int64(math.Min(float64(i+50), float64(len(lo.NamedQueryIds))))
-			bi := &athena.BatchGetNamedQueryInput{NamedQueryIds: lo.NamedQueryIds[i:e]}
-			bo, err := svc.BatchGetNamedQuery(bi)
-			if err != nil {
-				return nil, err
-			}
-			for _, q := range bo.NamedQueries {
-				data = append(data, suggestData{Text: *q.Name, Value: *q.Name})
-			}
-		}
-	case "named_query_queries":
-		pattern := parameters.Get("pattern").MustString()
-		r := regexp.MustCompile(pattern)
-		li := &athena.ListNamedQueriesInput{}
-		lo := &athena.ListNamedQueriesOutput{}
-		err = svc.ListNamedQueriesPages(li,
-			func(page *athena.ListNamedQueriesOutput, lastPage bool) bool {
-				lo.NamedQueryIds = append(lo.NamedQueryIds, page.NamedQueryIds...)
-				return !lastPage
-			})
-		if err != nil {
-			return nil, err
-		}
-		for i := 0; i < len(lo.NamedQueryIds); i += 50 {
-			e := int64(math.Min(float64(i+50), float64(len(lo.NamedQueryIds))))
-			bi := &athena.BatchGetNamedQueryInput{NamedQueryIds: lo.NamedQueryIds[i:e]}
-			bo, err := svc.BatchGetNamedQuery(bi)
-			if err != nil {
-				return nil, err
-			}
-			for _, q := range bo.NamedQueries {
-				if r.MatchString(*q.Name) {
-					data = append(data, suggestData{Text: *q.QueryString, Value: *q.QueryString})
-				}
-			}
-		}
-	case "query_execution_ids":
-		toRaw, err := strconv.ParseInt(timeRange.ToRaw, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		to := time.Unix(toRaw/1000, toRaw%1000*1000*1000)
-
-		pattern := parameters.Get("pattern").MustString()
-		var workGroupParam *string
-		workGroupParam = nil
-		if workGroup, ok := parameters.CheckGet("work_group"); ok {
-			temp := workGroup.MustString()
-			workGroupParam = &temp
-		}
-		r := regexp.MustCompile(pattern)
-		limit := parameters.Get("limit").MustInt()
-		li := &athena.ListQueryExecutionsInput{
-			WorkGroup: workGroupParam,
-		}
-		lo := &athena.ListQueryExecutionsOutput{}
-		err = svc.ListQueryExecutionsPagesWithContext(ctx, li,
-			func(page *athena.ListQueryExecutionsOutput, lastPage bool) bool {
-				lo.QueryExecutionIds = append(lo.QueryExecutionIds, page.QueryExecutionIds...)
-				return !lastPage
-			})
-		fbo := make([]*athena.QueryExecution, 0)
-		for i := 0; i < len(lo.QueryExecutionIds); i += 50 {
-			e := int64(math.Min(float64(i+50), float64(len(lo.QueryExecutionIds))))
-			bi := &athena.BatchGetQueryExecutionInput{QueryExecutionIds: lo.QueryExecutionIds[i:e]}
-			bo, err := svc.BatchGetQueryExecution(bi)
-			if err != nil {
-				return nil, err
-			}
-			for _, q := range bo.QueryExecutions {
-				if *q.Status.State != "SUCCEEDED" {
-					continue
-				}
-				if (*q.Status.CompletionDateTime).After(to) {
-					continue
-				}
-				if r.MatchString(*q.Query) {
-					fbo = append(fbo, q)
-				}
-			}
-		}
-		sort.Slice(fbo, func(i, j int) bool {
-			return fbo[i].Status.CompletionDateTime.After(*fbo[j].Status.CompletionDateTime)
-		})
-		limit = int(math.Min(float64(limit), float64(len(fbo))))
-		for _, q := range fbo[0:limit] {
-			data = append(data, suggestData{Text: *q.QueryExecutionId, Value: *q.QueryExecutionId})
-		}
+	default:
+		data = append(data, suggestData{Text: "Not yet implemented", Value: "Not yet implemented"})
 	}
 
 	table := t.transformToTable(data)
@@ -296,41 +237,42 @@ func handleAlertRequest(tsdbReq *datasource.DatasourceRequest, jsonRequest map[s
 
 // Converts the response from the proxy server into the format that grafana expects from the backend plugin
 func convertProxyResponse(jsonBytes []byte) ([]*datasource.QueryResult, error) {
-	var proxyResponses []ProxyResponse
-	err := json.Unmarshal(jsonBytes, &proxyResponses)
-	if err != nil {
-		return nil, errors.New("Couldn't unmarshal: " + string(jsonBytes))
-	}
-
-	queryResults := make([]*datasource.QueryResult, 0)
-
-	for _, proxyResponse := range proxyResponses {
-		points := make([]*datasource.Point, 0)
-
-		for _, pointArr := range proxyResponse.Datapoints {
-			point := datasource.Point{
-				Timestamp: int64(pointArr[1]),
-				Value:     pointArr[0],
-			}
-			points = append(points, &point)
-		}
-
-		timeSeries := datasource.TimeSeries{
-			Points: points,
-			Name:   proxyResponse.Target,
-		}
-
-		complexQueryParts := proxyResponse.Queries
-
-		queryResult := datasource.QueryResult{
-			RefId: proxyResponse.RefId,
-			Series: []*datasource.TimeSeries{
-				&timeSeries,
-			},
-			MetaJson: string(complexQueryParts),
-		}
-		queryResults = append(queryResults, &queryResult)
-	}
-
-	return queryResults, nil
+	return nil, nil
+	//var proxyResponses []ProxyResponse
+	//err := json.Unmarshal(jsonBytes, &proxyResponses)
+	//if err != nil {
+	//	return nil, errors.New("Couldn't unmarshal: " + string(jsonBytes))
+	//}
+	//
+	//queryResults := make([]*datasource.QueryResult, 0)
+	//
+	//for _, proxyResponse := range proxyResponses {
+	//	points := make([]*datasource.Point, 0)
+	//
+	//	for _, pointArr := range proxyResponse.Datapoints {
+	//		point := datasource.Point{
+	//			Timestamp: int64(pointArr[1]),
+	//			Value:     pointArr[0],
+	//		}
+	//		points = append(points, &point)
+	//	}
+	//
+	//	timeSeries := datasource.TimeSeries{
+	//		Points: points,
+	//		Name:   proxyResponse.Target,
+	//	}
+	//
+	//	complexQueryParts := proxyResponse.Queries
+	//
+	//	queryResult := datasource.QueryResult{
+	//		RefId: proxyResponse.RefId,
+	//		Series: []*datasource.TimeSeries{
+	//			&timeSeries,
+	//		},
+	//		MetaJson: string(complexQueryParts),
+	//	}
+	//	queryResults = append(queryResults, &queryResult)
+	//}
+	//
+	//return queryResults, nil
 }
