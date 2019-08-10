@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 	"sort"
 	"strconv"
-	"time"
 )
 
 type ScalyrDatasource struct {
@@ -99,16 +98,16 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 	}
 
 	//setup some parameters and the scalyr service
-	fromRaw, err := strconv.ParseInt(tsdbReq.TimeRange.FromRaw, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	from := time.Unix(fromRaw/1000, fromRaw%1000*1000*1000)
-	toRaw, err := strconv.ParseInt(tsdbReq.TimeRange.ToRaw, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	to := time.Unix(toRaw/1000, toRaw%1000*1000*1000)
+	//fromRaw, err := strconv.ParseInt(, 10, 64)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//from := time.Unix(fromRaw/1000, fromRaw%1000*1000*1000)
+	//toRaw, err := strconv.ParseInt(tsdbReq.TimeRange.ToRaw, 10, 64)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//to := time.Unix(toRaw/1000, toRaw%1000*1000*1000)
 	svc, err := t.getClient(tsdbReq.Datasource)
 	if err != nil {
 		return nil, err
@@ -116,7 +115,7 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 
 	//parse the
 	for _, target := range targets {
-		buckets, err := scalyr.GetBuckets(from, to, target.SecondsInterval)
+		buckets, err := scalyr.GetBuckets(tsdbReq.TimeRange.FromEpochMs, tsdbReq.TimeRange.ToEpochMs, target.SecondsInterval)
 		if err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("Error with target %s", target.RefId))
 		}
@@ -128,12 +127,12 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 					Filter:    target.Filter,
 					Buckets:   buckets,
 					Function:  target.GraphFunction,
-					StartTime: strconv.FormatInt(from.Unix(), 10),
-					EndTime:   strconv.FormatInt(to.Unix(), 10),
+					StartTime: strconv.FormatInt(tsdbReq.TimeRange.FromEpochMs, 10),
+					EndTime:   strconv.FormatInt(tsdbReq.TimeRange.ToEpochMs, 10),
 					Priority:  "low",
 				},
 			})
-			r, err := parseTimeSeriesResponse(resp, target.RefId, from, to, target.SecondsInterval)
+			r, err := parseTimeSeriesResponse(resp, target.RefId, tsdbReq.TimeRange.FromEpochMs, tsdbReq.TimeRange.ToEpochMs, target.SecondsInterval)
 			if err != nil {
 				return nil, err
 			}
@@ -144,10 +143,10 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 	return response, nil
 }
 
-func parseTimeSeriesResponse(resp *scalyr.TimeseriesQueryResponse, refId string, from time.Time, to time.Time, secondsInterval int) (*datasource.QueryResult, error) {
+func parseTimeSeriesResponse(resp *scalyr.TimeseriesQueryResponse, refId string, from int64, to int64, secondsInterval int) (*datasource.QueryResult, error) {
 	series := &datasource.TimeSeries{}
 
-	startTime := from.Unix() * 1000
+	startTime := from
 	endTime := startTime + int64(secondsInterval)
 	for _, r := range resp.Results {
 		for _, val := range r.Values {
@@ -155,8 +154,8 @@ func parseTimeSeriesResponse(resp *scalyr.TimeseriesQueryResponse, refId string,
 				Timestamp: endTime,
 				Value:     val,
 			})
-			if endTime > to.Unix() {
-				log.Warn("Set a datapoint to be outside the range of the end value. datapoint ts: %d, end value: %d", endTime, to.Unix())
+			if endTime > to {
+				log.Warn("Set a datapoint to be outside the range of the end value. datapoint ts: %d, end value: %d", endTime, to)
 			}
 			endTime += int64(secondsInterval)
 		}

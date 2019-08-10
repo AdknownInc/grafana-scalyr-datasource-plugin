@@ -25,11 +25,8 @@ The backend needs to implement 4 urls:
 
 ```
 git clone https://github.com/AdknownInc/grafana-scalyr-datasource-plugin.git
-cd scalyr-api-datasource
-npm install
-npm install -g grunt-cli
-grunt default
 ```
+
 
 
 ### Query API

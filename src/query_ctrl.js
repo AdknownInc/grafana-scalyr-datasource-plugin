@@ -1,5 +1,4 @@
 import {QueryCtrl} from 'app/plugins/sdk';
-import './css/query-editor.css!'
 
 const TIME_INDEX = 1;
 const INTERVAL_TYPE_WINDOW = 'window';

@@ -198,12 +198,20 @@ export class ScalyrDatasource {
 
         options.targets = _.map(options.targets, target => {
             return {
-                queryType: 'query',
-                target: this.templateSrv.replace(target.target, options.scopedVars, 'regex'),
+                datasourceId: this.datasourceId,
                 refId: target.refId,
                 hide: target.hide,
+
+                queryType: 'query',
+                type: target.type,
                 subtype: target.type || 'timeserie',
-                datasourceId: this.datasourceId,
+                chosenType: "minute",
+                target: this.templateSrv.replace(target.target, options.scopedVars, 'regex'), //the name of the query
+                filter: target.filter, //the filter sent to scalyr
+                graphFunction: target.graphFunction, //the type of function that is needed on Scalyr's end
+                intervalType: target.intervalType,
+                secondsInterval: target.secondsInterval,
+                showQueryParts: target.showQueryParts
             };
         });
 

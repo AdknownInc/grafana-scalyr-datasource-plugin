@@ -1,6 +1,6 @@
 'use strict';
 
-System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_export, _context) {
+System.register(['app/plugins/sdk'], function (_export, _context) {
     "use strict";
 
     var QueryCtrl, _typeof, _createClass, TIME_INDEX, INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED, ScalyrDatasourceQueryCtrl;
@@ -38,7 +38,7 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
     return {
         setters: [function (_appPluginsSdk) {
             QueryCtrl = _appPluginsSdk.QueryCtrl;
-        }, function (_cssQueryEditorCss) {}],
+        }],
         execute: function () {
             _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
                 return typeof obj;

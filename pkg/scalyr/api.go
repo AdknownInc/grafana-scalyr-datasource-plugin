@@ -13,7 +13,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"time"
 )
 
 type Scalyr struct {
@@ -84,11 +83,11 @@ func (s *Scalyr) TimeSeriesQuery(queries []TimeseriesQuery) (*TimeseriesQueryRes
 
 //GetBuckets gets the number of buckets that would be appropriate for the passed in from and to parameters, giving each bucket
 //approximately the number of seconds defined in intervalSeconds
-func GetBuckets(from time.Time, to time.Time, intervalSeconds int) (int, error) {
-	if from.Unix() >= to.Unix() {
-		return -1, errors.New(fmt.Sprintf("GetBuckets(): from time.Time (%v) was greater than to time.Time (%v) ", from.Unix(), to.Unix()))
+func GetBuckets(from int64, to int64, intervalSeconds int) (int, error) {
+	if from >= to {
+		return -1, errors.New(fmt.Sprintf("GetBuckets(): from time.Time (%v) was greater than to time.Time (%v) ", from, to))
 	}
-	timeframe := from.Unix() - to.Unix()
+	timeframe := to - from
 	if intervalSeconds < 1 {
 		return -1, errors.New(fmt.Sprintf("GetBuckets(): intervalSeconds must be at least 1, received (%v) ", intervalSeconds))
 	}
@@ -98,7 +97,7 @@ func GetBuckets(from time.Time, to time.Time, intervalSeconds int) (int, error) 
 
 	buckets := timeframe / int64(intervalSeconds)
 	if buckets > MaxBuckets {
-		return -1, errors.New(fmt.Sprintf("GetBuckets(): calculated buckets too large. Max allowed buckets is %d. Params: from - %v, to - %v, intervalSeconds - %v", MaxBuckets, from.Unix(), to.Unix(), intervalSeconds))
+		return -1, errors.New(fmt.Sprintf("GetBuckets(): calculated buckets too large. Max allowed buckets is %d. Params: from - %v, to - %v, intervalSeconds - %v", MaxBuckets, from, to, intervalSeconds))
 	}
 	return int(buckets), nil
 }
