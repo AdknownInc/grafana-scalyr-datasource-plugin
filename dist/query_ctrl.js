@@ -77,7 +77,6 @@ System.register(['app/plugins/sdk'], function (_export, _context) {
                     var _this = _possibleConstructorReturn(this, (ScalyrDatasourceQueryCtrl.__proto__ || Object.getPrototypeOf(ScalyrDatasourceQueryCtrl)).call(this, $scope, $injector));
 
                     _this.scope = $scope;
-
                     _this.target.filter = _this.target.filter || "";
                     _this.target.secondsInterval = _this.target.secondsInterval || 60;
                     // this.target.interval = this.target.interval || 60;
@@ -95,9 +94,7 @@ System.register(['app/plugins/sdk'], function (_export, _context) {
                     _this.serializer = $httpParamSerializer;
 
                     _this.datasource.queryControls.push(_this);
-
                     _this.datasource.panelName = _this.panel.title;
-
                     _this.target.showQueryParts = _this.datasource.parseComplex;
                     return _this;
                 }

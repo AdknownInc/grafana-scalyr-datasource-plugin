@@ -13,6 +13,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 type Scalyr struct {
@@ -42,7 +43,7 @@ func NewPtr(readLogToken string, readConfigToken string) *Scalyr {
 		readConfigToken: readConfigToken,
 		sessionId:       uuid.New().String(),
 		client: http.Client{
-			Timeout: 10,
+			Timeout: 10 * time.Second,
 		},
 	}
 }
@@ -78,6 +79,9 @@ func (s *Scalyr) TimeSeriesQuery(queries []TimeseriesQuery) (*TimeseriesQueryRes
 	if err != nil {
 		return nil, errors.Wrap(err, "Error on response body unmarshalling")
 	}
+	if bodyresp.Status != "success" {
+		return nil, errors.New(fmt.Sprintf("Non-success status returned from Scalyr: '%s'", bodyresp.Status))
+	}
 	return &bodyresp, nil
 }
 
@@ -85,7 +89,7 @@ func (s *Scalyr) TimeSeriesQuery(queries []TimeseriesQuery) (*TimeseriesQueryRes
 //approximately the number of seconds defined in intervalSeconds
 func GetBuckets(from int64, to int64, intervalSeconds int) (int, error) {
 	if from >= to {
-		return -1, errors.New(fmt.Sprintf("GetBuckets(): from time.Time (%v) was greater than to time.Time (%v) ", from, to))
+		return -1, errors.New(fmt.Sprintf("GetBuckets(): param {from} (%v) was greater than param {to} (%v) ", from, to))
 	}
 	timeframe := to - from
 	if intervalSeconds < 1 {
@@ -97,7 +101,7 @@ func GetBuckets(from int64, to int64, intervalSeconds int) (int, error) {
 
 	buckets := timeframe / int64(intervalSeconds)
 	if buckets > MaxBuckets {
-		return -1, errors.New(fmt.Sprintf("GetBuckets(): calculated buckets too large. Max allowed buckets is %d. Params: from - %v, to - %v, intervalSeconds - %v", MaxBuckets, from, to, intervalSeconds))
+		return -1, errors.New(fmt.Sprintf("GetBuckets(): calculated buckets too large. Max allowed buckets is %d. Params: from (%v), to (%v), intervalSeconds (%v)", MaxBuckets, from, to, intervalSeconds))
 	}
 	return int(buckets), nil
 }

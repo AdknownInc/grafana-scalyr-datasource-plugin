@@ -8,10 +8,7 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
 
     constructor($scope, $injector, $window, $httpParamSerializer) {
         super($scope, $injector);
-
         this.scope = $scope;
-
-
         this.target.filter = this.target.filter || "";
         this.target.secondsInterval = this.target.secondsInterval || 60;
         // this.target.interval = this.target.interval || 60;
@@ -39,9 +36,7 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
         this.serializer = $httpParamSerializer;
 
         this.datasource.queryControls.push(this);
-
         this.datasource.panelName = this.panel.title;
-
         this.target.showQueryParts = this.datasource.parseComplex;
     }
 
@@ -126,7 +121,6 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
             };
 
             queryParams = Object.assign(queryParams, timeFrame);
-
 
             let qs = this.serializer(queryParams);
             let url = 'https://www.scalyr.com/events?' + qs;

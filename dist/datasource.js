@@ -121,7 +121,7 @@ System.register(["lodash"], function (_export, _context) {
                             return this.q.when({ data: [] });
                         }
                         //Deep copy the object. When template variables are swapped out we don't want to modify the original values
-                        var finalOptions = JSON.parse(JSON.stringify(parsedOptions));
+                        var finalOptions = _.cloneDeep(parsedOptions);
 
                         for (var i = 0; i < finalOptions.targets.length; i++) {
                             this.reverseAllVariables();
@@ -143,17 +143,6 @@ System.register(["lodash"], function (_export, _context) {
                         finalOptions.userId = this.backendSrv.contextSrv.user.id;
                         finalOptions.org = this.backendSrv.contextSrv.user.orgName;
                         finalOptions.orgId = this.backendSrv.contextSrv.user.orgId;
-                        //Set in query ctrl constructor
-                        finalOptions.panelName = this.panelName;
-
-                        var tsdbRequest = {
-                            from: options.range.from.valueOf().toString(),
-                            to: options.range.to.valueOf().toString(),
-                            queries: [{
-                                datasourceId: this.datasourceId,
-                                backendUse: parsedOptions
-                            }]
-                        };
 
                         //This is needed because Grafana messes up the ordering when moving the response from backend to frontend
                         var refIdMap = _.map(options.targets, function (target) {
@@ -223,26 +212,6 @@ System.register(["lodash"], function (_export, _context) {
                         return this.q.when([]);
                     }
                 }, {
-                    key: "mapToTextValue",
-                    value: function mapToTextValue(result) {
-                        return _.map(result.data, function (d, i) {
-                            if (d && d.text && d.value) {
-                                return { text: d.text, value: d.value };
-                            } else if (_.isObject(d)) {
-                                return { text: d, value: i };
-                            }
-                            return { text: d, value: d };
-                        });
-                    }
-                }, {
-                    key: "doRequest",
-                    value: function doRequest(options) {
-                        options.withCredentials = this.withCredentials;
-                        options.headers = this.headers;
-                        this.options = options;
-                        return this.backendSrv.datasourceRequest(options);
-                    }
-                }, {
                     key: "doTsdbRequest",
                     value: function doTsdbRequest(options) {
                         var tsdbRequestData = {
@@ -269,12 +238,21 @@ System.register(["lodash"], function (_export, _context) {
 
                         options.targets = _.map(options.targets, function (target) {
                             return {
-                                queryType: 'query',
-                                target: _this3.templateSrv.replace(target.target, options.scopedVars, 'regex'),
+                                datasourceId: _this3.datasourceId,
                                 refId: target.refId,
                                 hide: target.hide,
+
+                                queryType: 'query',
+                                type: target.type,
+                                scalyrQueryType: target.type,
                                 subtype: target.type || 'timeserie',
-                                datasourceId: _this3.datasourceId
+                                chosenType: "minute",
+                                target: _this3.templateSrv.replace(target.target, options.scopedVars, 'regex'), //the name of the query
+                                filter: target.filter, //the filter sent to scalyr
+                                graphFunction: target.graphFunction, //the type of function that is needed on Scalyr's end
+                                intervalType: target.intervalType,
+                                secondsInterval: target.secondsInterval,
+                                showQueryParts: target.showQueryParts
                             };
                         });
 

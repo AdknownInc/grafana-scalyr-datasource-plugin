@@ -77,7 +77,7 @@ export class ScalyrDatasource {
             return this.q.when({data: []});
         }
         //Deep copy the object. When template variables are swapped out we don't want to modify the original values
-        let finalOptions = JSON.parse(JSON.stringify(parsedOptions));
+        let finalOptions = _.cloneDeep(parsedOptions);
 
         for (let i = 0; i < finalOptions.targets.length; i++) {
             this.reverseAllVariables();
@@ -99,17 +99,6 @@ export class ScalyrDatasource {
         finalOptions.userId = this.backendSrv.contextSrv.user.id;
         finalOptions.org = this.backendSrv.contextSrv.user.orgName;
         finalOptions.orgId = this.backendSrv.contextSrv.user.orgId;
-        //Set in query ctrl constructor
-        finalOptions.panelName = this.panelName;
-
-        const tsdbRequest = {
-            from: options.range.from.valueOf().toString(),
-            to: options.range.to.valueOf().toString(),
-            queries: [{
-                datasourceId: this.datasourceId,
-                backendUse: parsedOptions,
-            }]
-        };
 
         //This is needed because Grafana messes up the ordering when moving the response from backend to frontend
         let refIdMap = _.map(options.targets, target => target.refId);
@@ -139,8 +128,7 @@ export class ScalyrDatasource {
     metricFindQuery(query) {
         let serverHostsQuery = query.match(/^server_hosts\(\)/);
         if (serverHostsQuery) {
-            return this.doMetricQueryRequest('server_hosts', {
-            });
+            return this.doMetricQueryRequest('server_hosts', {});
         }
 
         let logFilesQuery = query.match(/^log_files\((.+)\)/);
@@ -152,24 +140,6 @@ export class ScalyrDatasource {
         }
 
         return this.q.when([]);
-    }
-
-    mapToTextValue(result) {
-        return _.map(result.data, (d, i) => {
-            if (d && d.text && d.value) {
-                return {text: d.text, value: d.value};
-            } else if (_.isObject(d)) {
-                return {text: d, value: i};
-            }
-            return {text: d, value: d};
-        });
-    }
-
-    doRequest(options) {
-        options.withCredentials = this.withCredentials;
-        options.headers = this.headers;
-        this.options = options;
-        return this.backendSrv.datasourceRequest(options);
     }
 
     /**
@@ -204,6 +174,7 @@ export class ScalyrDatasource {
 
                 queryType: 'query',
                 type: target.type,
+                scalyrQueryType: target.type,
                 subtype: target.type || 'timeserie',
                 chosenType: "minute",
                 target: this.templateSrv.replace(target.target, options.scopedVars, 'regex'), //the name of the query

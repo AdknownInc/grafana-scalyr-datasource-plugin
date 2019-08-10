@@ -28,7 +28,6 @@ type Target struct {
 	ScalyrQueryType string //one of facet, numerical or complex numerical
 	IntervalType    string //fixed or window
 	ChosenType      string //chosen interval type, only relevant when the user has selected 'fixed' for IntervalType
-	LegendFormat    string
 }
 
 const (
@@ -39,9 +38,9 @@ const (
 	FixedIntervalDay            = "day"
 	FixedIntervalWeek           = "week"
 	FixedIntervalMonth          = "month"
-	ScalyrQueryFacet            = "facet"
-	ScalyrQueryNumerical        = "numerical"
-	ScalyrQueryComplexNumerical = "complex numerical"
+	ScalyrQueryFacet            = "facet query"
+	ScalyrQueryNumerical        = "numeric query"
+	ScalyrQueryComplexNumerical = "complex numeric query"
 )
 
 type suggestData struct {
@@ -115,7 +114,7 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 
 	//parse the
 	for _, target := range targets {
-		buckets, err := scalyr.GetBuckets(tsdbReq.TimeRange.FromEpochMs, tsdbReq.TimeRange.ToEpochMs, target.SecondsInterval)
+		buckets, err := scalyr.GetBuckets(tsdbReq.TimeRange.FromEpochMs/1000, tsdbReq.TimeRange.ToEpochMs/1000, target.SecondsInterval)
 		if err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("Error with target %s", target.RefId))
 		}
@@ -132,6 +131,9 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 					Priority:  "low",
 				},
 			})
+			if err != nil {
+				return nil, errors.Wrap(err, "Error returned on a numeric query")
+			}
 			r, err := parseTimeSeriesResponse(resp, target.RefId, tsdbReq.TimeRange.FromEpochMs, tsdbReq.TimeRange.ToEpochMs, target.SecondsInterval)
 			if err != nil {
 				return nil, err

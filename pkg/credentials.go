@@ -20,7 +20,15 @@ func (t *ScalyrDatasource) getDsInfo(datasourceInfo *datasource.DatasourceInfo) 
 	if v, ok := datasourceInfo.DecryptedSecureJsonData["readlogtoken"]; ok {
 		dsInfo.ReadLogKey = v
 	}
+	//included for legacy
+	if v, ok := datasourceInfo.DecryptedSecureJsonData["readtoken"]; ok {
+		dsInfo.ReadLogKey = v
+	}
 	if v, ok := datasourceInfo.DecryptedSecureJsonData["readconfigtoken"]; ok {
+		dsInfo.ReadConfigKey = v
+	}
+	//included for legacy
+	if v, ok := datasourceInfo.DecryptedSecureJsonData["writetoken"]; ok {
 		dsInfo.ReadConfigKey = v
 	}
 
