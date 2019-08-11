@@ -24,6 +24,7 @@ type TimeseriesQueryResponse struct {
 	Status        string                  `json:"status"`
 	Results       []TimeseriesQueryResult `json:"results"`
 	ExecutionTime int                     `json:"executionTime"`
+	Message       string                  `json:"message,omitempty"`
 }
 
 type TimeseriesQueryResult struct {

@@ -17,18 +17,20 @@ func (t *ScalyrDatasource) getDsInfo(datasourceInfo *datasource.DatasourceInfo) 
 		return nil, err
 	}
 
-	if v, ok := datasourceInfo.DecryptedSecureJsonData["readlogtoken"]; ok {
+	//TODO: detect if the token is not encypted. That's the case for datasources setup before version 6.1 or something
+	decryptedData := datasourceInfo.GetDecryptedSecureJsonData()
+	if v, ok := decryptedData["readlogtoken"]; ok {
 		dsInfo.ReadLogKey = v
 	}
 	//included for legacy
-	if v, ok := datasourceInfo.DecryptedSecureJsonData["readtoken"]; ok {
+	if v, ok := decryptedData["readtoken"]; ok {
 		dsInfo.ReadLogKey = v
 	}
-	if v, ok := datasourceInfo.DecryptedSecureJsonData["readconfigtoken"]; ok {
+	if v, ok := decryptedData["readconfigtoken"]; ok {
 		dsInfo.ReadConfigKey = v
 	}
 	//included for legacy
-	if v, ok := datasourceInfo.DecryptedSecureJsonData["writetoken"]; ok {
+	if v, ok := decryptedData["writetoken"]; ok {
 		dsInfo.ReadConfigKey = v
 	}
 

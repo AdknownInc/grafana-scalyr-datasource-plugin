@@ -135,7 +135,7 @@ System.register(['app/plugins/sdk'], function (_export, _context) {
                     value: function getComplexParts() {
                         var _this2 = this;
 
-                        if (this.target.type !== 'complex numeric query' || !this.target.showQueryParts || !this.datasource.parseComplex) {
+                        if (this.target.hide === true || this.target.type !== 'complex numeric query' || !this.target.showQueryParts || !this.datasource.parseComplex) {
                             return;
                         }
 
@@ -212,12 +212,20 @@ System.register(['app/plugins/sdk'], function (_export, _context) {
                 }, {
                     key: 'getTargetTimeframe',
                     value: function getTargetTimeframe(target) {
+                        if (this.datasource.response.data.length === 0) {
+                            //return a default 24 hours if a response doesn't have data
+                            var now = new Date();
+                            return {
+                                startTime: now.getTime() - 1000 * 60 * 60 * 24,
+                                endTime: now.getTime()
+                            };
+                        }
                         var _iteratorNormalCompletion2 = true;
                         var _didIteratorError2 = false;
                         var _iteratorError2 = undefined;
 
                         try {
-                            for (var _iterator2 = this.panelCtrl.dataList[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                            for (var _iterator2 = this.datasource.response.data[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
                                 var dataSet = _step2.value;
 
                                 if (dataSet.target === target) {
@@ -227,6 +235,7 @@ System.register(['app/plugins/sdk'], function (_export, _context) {
                                     };
                                 }
                             }
+                            //default to returning the from and to values of the first panel/dashboard
                         } catch (err) {
                             _didIteratorError2 = true;
                             _iteratorError2 = err;
@@ -241,6 +250,12 @@ System.register(['app/plugins/sdk'], function (_export, _context) {
                                 }
                             }
                         }
+
+                        var defaultData = this.datasource.response.data[0];
+                        return {
+                            startTime: defaultData.datapoints[0][TIME_INDEX],
+                            endTime: defaultData.datapoints.slice(-1)[0][TIME_INDEX]
+                        };
                     }
                 }]);
 

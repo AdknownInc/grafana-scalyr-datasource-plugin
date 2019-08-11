@@ -80,7 +80,7 @@ func (s *Scalyr) TimeSeriesQuery(queries []TimeseriesQuery) (*TimeseriesQueryRes
 		return nil, errors.Wrap(err, "Error on response body unmarshalling")
 	}
 	if bodyresp.Status != "success" {
-		return nil, errors.New(fmt.Sprintf("Non-success status returned from Scalyr: '%s'", bodyresp.Status))
+		return nil, errors.New(fmt.Sprintf("Scalyr api call failed. Status (%s), message: '%s'", bodyresp.Status, bodyresp.Message))
 	}
 	return &bodyresp, nil
 }

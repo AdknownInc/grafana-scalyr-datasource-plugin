@@ -73,7 +73,7 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
     }
 
     getComplexParts() {
-        if(this.target.type !== 'complex numeric query' || !this.target.showQueryParts || !this.datasource.parseComplex) {
+        if(this.target.hide === true || this.target.type !== 'complex numeric query' || !this.target.showQueryParts || !this.datasource.parseComplex) {
             return;
         }
 
@@ -137,7 +137,15 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
      * @returns {{startTime: int, endTime: int}}
      */
     getTargetTimeframe(target) {
-        for (let dataSet of this.panelCtrl.dataList) {
+        if (this.datasource.response.data.length === 0) {
+            //return a default 24 hours if a response doesn't have data
+            let now = new Date();
+            return {
+                startTime: now.getTime() - (1000 * 60 * 60 * 24),
+                endTime: now.getTime()
+            }
+        }
+        for (let dataSet of this.datasource.response.data) {
             if (dataSet.target === target) {
                 return {
                     startTime: dataSet.datapoints[0][TIME_INDEX],
@@ -145,6 +153,12 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
                 }
             }
         }
+        //default to returning the from and to values of the first panel/dashboard
+        let defaultData = this.datasource.response.data[0];
+        return {
+            startTime: defaultData.datapoints[0][TIME_INDEX],
+            endTime: defaultData.datapoints.slice(-1)[0][TIME_INDEX]
+        };
     }
 }
 

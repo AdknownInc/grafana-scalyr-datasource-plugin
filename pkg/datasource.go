@@ -22,6 +22,7 @@ type ScalyrDatasource struct {
 type Target struct {
 	RefId           string
 	QueryType       string //refers to the grafana query type
+	Name            string `json:"target"`
 	Filter          string
 	GraphFunction   string
 	SecondsInterval int
@@ -134,7 +135,7 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 			if err != nil {
 				return nil, errors.Wrap(err, "Error returned on a numeric query")
 			}
-			r, err := parseTimeSeriesResponse(resp, target.RefId, tsdbReq.TimeRange.FromEpochMs, tsdbReq.TimeRange.ToEpochMs, target.SecondsInterval)
+			r, err := parseTimeSeriesResponse(resp, target, tsdbReq.TimeRange.FromEpochMs, tsdbReq.TimeRange.ToEpochMs)
 			if err != nil {
 				return nil, err
 			}
@@ -145,11 +146,12 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 	return response, nil
 }
 
-func parseTimeSeriesResponse(resp *scalyr.TimeseriesQueryResponse, refId string, from int64, to int64, secondsInterval int) (*datasource.QueryResult, error) {
+func parseTimeSeriesResponse(resp *scalyr.TimeseriesQueryResponse, target Target, from int64, to int64) (*datasource.QueryResult, error) {
 	series := &datasource.TimeSeries{}
-
+	series.Name = target.Name
 	startTime := from
-	endTime := startTime + int64(secondsInterval)
+	interval := int64(target.SecondsInterval) * 1000 //convert seconds to milliseconds as that's what grafana is expecting
+	endTime := startTime + interval
 	for _, r := range resp.Results {
 		for _, val := range r.Values {
 			series.Points = append(series.Points, &datasource.Point{
@@ -159,7 +161,7 @@ func parseTimeSeriesResponse(resp *scalyr.TimeseriesQueryResponse, refId string,
 			if endTime > to {
 				log.Warn("Set a datapoint to be outside the range of the end value. datapoint ts: %d, end value: %d", endTime, to)
 			}
-			endTime += int64(secondsInterval)
+			endTime += interval
 		}
 	}
 
@@ -170,7 +172,7 @@ func parseTimeSeriesResponse(resp *scalyr.TimeseriesQueryResponse, refId string,
 	s = append(s, series)
 
 	return &datasource.QueryResult{
-		RefId:  refId,
+		RefId:  target.RefId,
 		Series: s,
 	}, nil
 }
