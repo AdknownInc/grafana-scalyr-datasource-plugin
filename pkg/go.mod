@@ -3,6 +3,9 @@ module github.com/adknowninc/grafana-scalyr-datasource-plugin/pkg
 go 1.12
 
 require (
+	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
+	github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259
+	github.com/google/uuid v1.1.1
 	github.com/grafana/grafana v0.0.0-20190807094941-483246016b91
 	github.com/grafana/grafana_plugin_model v0.0.0-20180518082423-84176c64269d
 	github.com/hashicorp/go-hclog v0.9.2 // indirect

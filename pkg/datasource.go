@@ -116,7 +116,8 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 		}
 		switch target.ScalyrQueryType {
 		case ScalyrQueryNumerical:
-			resp, err := svc.TimeSeriesQuery([]scalyr.TimeseriesQuery{
+			//TODO: gonna need to call the remainder between bucketRequest.To and tsdbReq.TimeRange.EpochToMS on IntervalTypeFixed and then combine results if we want Fixed to work properly like with the proxy server
+			resp, err := svc.TimeSeriesQuery([]*scalyr.TimeseriesQuery{
 				{
 					Filter:    target.Filter,
 					Buckets:   buckets,
@@ -134,6 +135,8 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 				return nil, err
 			}
 			response.Results = append(response.Results, r)
+		case ScalyrQueryComplexNumerical:
+
 		}
 	}
 
@@ -270,46 +273,4 @@ func handleAlertRequest(tsdbReq *datasource.DatasourceRequest, jsonRequest map[s
 	}
 
 	return jsonToPass, nil
-}
-
-// Converts the response from the proxy server into the format that grafana expects from the backend plugin
-func convertProxyResponse(jsonBytes []byte) ([]*datasource.QueryResult, error) {
-	return nil, nil
-	//var proxyResponses []ProxyResponse
-	//err := json.Unmarshal(jsonBytes, &proxyResponses)
-	//if err != nil {
-	//	return nil, errors.New("Couldn't unmarshal: " + string(jsonBytes))
-	//}
-	//
-	//queryResults := make([]*datasource.QueryResult, 0)
-	//
-	//for _, proxyResponse := range proxyResponses {
-	//	points := make([]*datasource.Point, 0)
-	//
-	//	for _, pointArr := range proxyResponse.Datapoints {
-	//		point := datasource.Point{
-	//			Timestamp: int64(pointArr[1]),
-	//			Value:     pointArr[0],
-	//		}
-	//		points = append(points, &point)
-	//	}
-	//
-	//	timeSeries := datasource.TimeSeries{
-	//		Points: points,
-	//		Name:   proxyResponse.Target,
-	//	}
-	//
-	//	complexQueryParts := proxyResponse.Queries
-	//
-	//	queryResult := datasource.QueryResult{
-	//		RefId: proxyResponse.RefId,
-	//		Series: []*datasource.TimeSeries{
-	//			&timeSeries,
-	//		},
-	//		MetaJson: string(complexQueryParts),
-	//	}
-	//	queryResults = append(queryResults, &queryResult)
-	//}
-	//
-	//return queryResults, nil
 }

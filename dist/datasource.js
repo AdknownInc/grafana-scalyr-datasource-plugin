@@ -246,7 +246,7 @@ System.register(["lodash"], function (_export, _context) {
                                 type: target.type,
                                 scalyrQueryType: target.type,
                                 subtype: target.type || 'timeserie',
-                                chosenType: "minute",
+                                chosenType: target.chosenType,
                                 target: _this3.templateSrv.replace(target.target, options.scopedVars, 'regex'), //the name of the query
                                 filter: target.filter, //the filter sent to scalyr
                                 graphFunction: target.graphFunction, //the type of function that is needed on Scalyr's end

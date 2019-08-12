@@ -59,7 +59,7 @@ func (s *Scalyr) SetHttpClient(client http.Client) {
 	s.client = client
 }
 
-func (s *Scalyr) TimeSeriesQuery(queries []TimeseriesQuery) (*TimeseriesQueryResponse, error) {
+func (s *Scalyr) TimeSeriesQuery(queries []*TimeseriesQuery) (*TimeseriesQueryResponse, error) {
 	tsqReq := TimeseriesQueryRequest{
 		Token:   s.readLogToken,
 		Queries: queries,
@@ -89,6 +89,40 @@ func (s *Scalyr) TimeSeriesQuery(queries []TimeseriesQuery) (*TimeseriesQueryRes
 		return nil, errors.New(fmt.Sprintf("Scalyr api call failed. Status (%s), message: '%s'", bodyresp.Status, bodyresp.Message))
 	}
 	return &bodyresp, nil
+}
+
+func (s *Scalyr) ComplexTimeSeriesQuery(queries []TimeseriesQuery) (*TimeseriesQueryResponse, error) {
+	//parse out the different filters
+	totalResponse := &TimeseriesQueryResponse{
+		Status:        "success",
+		Results:       []TimeseriesQueryResult{},
+		ExecutionTime: 0,
+		Message:       "Not Yet Implemented",
+	}
+
+	//for i, query := range queries {
+	//	fullVarExpr := ""
+	//	simpleExpressions, err := ParseComplexExpression(query.Filter, query.StartTime, query.EndTime, query.Buckets, &fullVarExpr, false)
+	//	if err != nil {
+	//		return nil, errors.Wrap(err, fmt.Sprintf("Error parsing query %d with filter %s", i, query.Filter[0:8]))
+	//	}
+	//	//individualExpressions := simpleExpressions
+	//	for k, params := range simpleExpressions {
+	//		if params.Query != nil {
+	//			resp, err := s.TimeSeriesQuery([]*TimeseriesQuery{
+	//				params.Query,
+	//			})
+	//			if err != nil {
+	//				return nil, errors.Wrap(err, fmt.Sprintf("Error in query %d on segment %s", i, params.Filter))
+	//			}
+	//			simpleExpressions[k].Response = resp
+	//		}
+	//	}
+	//
+	//
+	//}
+
+	return totalResponse, nil
 }
 
 //GetBuckets gets the number of buckets that would be appropriate for the passed in from and to parameters, giving each bucket

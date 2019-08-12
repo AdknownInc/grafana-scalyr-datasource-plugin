@@ -7,8 +7,8 @@ package scalyr
 
 //url: https://www.scalyr.com/api/timeseriesQuery
 type TimeseriesQueryRequest struct {
-	Token   string            `json:"token"`
-	Queries []TimeseriesQuery `json:"queries"`
+	Token   string             `json:"token"`
+	Queries []*TimeseriesQuery `json:"queries"`
 }
 
 type TimeseriesQuery struct {
