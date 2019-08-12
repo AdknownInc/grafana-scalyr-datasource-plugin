@@ -104,16 +104,16 @@ export class ScalyrDatasource {
         let refIdMap = _.map(options.targets, target => target.refId);
 
         return this.doTsdbRequest(finalOptions)
-        .then(handleTsdbResponse).then((res) => {
-            res.data.sort((a, b) => {
-                return refIdMap.indexOf(a.refId) > refIdMap.indexOf(b.refId);
+            .then(handleTsdbResponse).then((res) => {
+                res.data.sort((a, b) => {
+                    return refIdMap.indexOf(a.refId) > refIdMap.indexOf(b.refId);
+                });
+                this.response = res;
+                for (let queryControl of this.queryControls) {
+                    queryControl.getComplexParts();
+                }
+                return res;
             });
-            this.response = res;
-            for (let queryControl of this.queryControls) {
-                queryControl.getComplexParts();
-            }
-            return res;
-        });
     }
 
     testDatasource() {
@@ -176,7 +176,7 @@ export class ScalyrDatasource {
                 type: target.type,
                 scalyrQueryType: target.type,
                 subtype: target.type || 'timeserie',
-                chosenType: "minute",
+                chosenType: target.chosenType,
                 target: this.templateSrv.replace(target.target, options.scopedVars, 'regex'), //the name of the query
                 filter: target.filter, //the filter sent to scalyr
                 graphFunction: target.graphFunction, //the type of function that is needed on Scalyr's end

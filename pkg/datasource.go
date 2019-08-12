@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"sort"
 	"strconv"
+	"time"
 )
 
 type ScalyrDatasource struct {
@@ -32,8 +33,8 @@ type Target struct {
 }
 
 const (
-	IntervalTypeFixed           = "fixed"
-	IntervalTypeWindow          = "window"
+	IntervalTypeWindow          = "window" //the datapoint timestamps are evenly spaced in relation to the current time
+	IntervalTypeFixed           = "fixed"  //the end datapoint timestamp is offset to make the rest of of the datapoints exactly align with some time value (the start of the minute, hour, day, etc.)
 	FixedIntervalMinute         = "minute"
 	FixedIntervalHour           = "hour"
 	FixedIntervalDay            = "day"
@@ -97,29 +98,22 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 		targets = append(targets, target)
 	}
 
-	//setup some parameters and the scalyr service
-	//fromRaw, err := strconv.ParseInt(, 10, 64)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//from := time.Unix(fromRaw/1000, fromRaw%1000*1000*1000)
-	//toRaw, err := strconv.ParseInt(tsdbReq.TimeRange.ToRaw, 10, 64)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//to := time.Unix(toRaw/1000, toRaw%1000*1000*1000)
 	svc, err := t.getClient(tsdbReq.Datasource)
 	if err != nil {
 		return nil, err
 	}
 
-	//parse the
+	//TODO: have the target parsing be done in channels
+	//parse the target requests
 	for _, target := range targets {
-		buckets, err := scalyr.GetBuckets(tsdbReq.TimeRange.FromEpochMs/1000, tsdbReq.TimeRange.ToEpochMs/1000, target.SecondsInterval)
+		bucketRequest, err := t.getSelectedInterval(tsdbReq.TimeRange, target)
 		if err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("Error with target %s", target.RefId))
 		}
-
+		buckets, err := scalyr.GetBuckets(bucketRequest)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("Error with target %s", target.RefId))
+		}
 		switch target.ScalyrQueryType {
 		case ScalyrQueryNumerical:
 			resp, err := svc.TimeSeriesQuery([]scalyr.TimeseriesQuery{
@@ -127,15 +121,15 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 					Filter:    target.Filter,
 					Buckets:   buckets,
 					Function:  target.GraphFunction,
-					StartTime: strconv.FormatInt(tsdbReq.TimeRange.FromEpochMs, 10),
-					EndTime:   strconv.FormatInt(tsdbReq.TimeRange.ToEpochMs, 10),
+					StartTime: strconv.FormatInt(bucketRequest.From, 10),
+					EndTime:   strconv.FormatInt(bucketRequest.To, 10),
 					Priority:  "low",
 				},
 			})
 			if err != nil {
 				return nil, errors.Wrap(err, "Error returned on a numeric query")
 			}
-			r, err := parseTimeSeriesResponse(resp, target, tsdbReq.TimeRange.FromEpochMs, tsdbReq.TimeRange.ToEpochMs)
+			r, err := parseTimeSeriesResponse(resp, target, bucketRequest)
 			if err != nil {
 				return nil, err
 			}
@@ -146,20 +140,21 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 	return response, nil
 }
 
-func parseTimeSeriesResponse(resp *scalyr.TimeseriesQueryResponse, target Target, from int64, to int64) (*datasource.QueryResult, error) {
+func parseTimeSeriesResponse(resp *scalyr.TimeseriesQueryResponse, target Target, bucketRequest *scalyr.BucketRequest) (*datasource.QueryResult, error) {
 	series := &datasource.TimeSeries{}
 	series.Name = target.Name
-	startTime := from
-	interval := int64(target.SecondsInterval) * 1000 //convert seconds to milliseconds as that's what grafana is expecting
+	startTime := bucketRequest.From * 1000
+	interval := int64(bucketRequest.IntervalSeconds) * 1000 //convert seconds to milliseconds as that's what grafana is expecting
 	endTime := startTime + interval
+	//endTime := startTime
 	for _, r := range resp.Results {
 		for _, val := range r.Values {
 			series.Points = append(series.Points, &datasource.Point{
 				Timestamp: endTime,
 				Value:     val,
 			})
-			if endTime > to {
-				log.Warn("Set a datapoint to be outside the range of the end value. datapoint ts: %d, end value: %d", endTime, to)
+			if endTime > bucketRequest.To {
+				log.Warn("Set a datapoint to be outside the range of the end value. datapoint ts: %d, end value: %d", endTime, bucketRequest.To)
 			}
 			endTime += interval
 		}
@@ -219,6 +214,45 @@ func (t *ScalyrDatasource) transformToTable(data []suggestData) *datasource.Tabl
 		table.Rows = append(table.Rows, row)
 	}
 	return table
+}
+
+//getSelectedInterval gets the time range of the request based on the interval type selected.
+//note that if it is IntervalTypeFixed that a remainder bucket value must be computed, otherwise there aren't enough
+//datapoints to reach the right-side of the graph. Extending the endtime passed the graph throws off the shape
+func (t *ScalyrDatasource) getSelectedInterval(trange *datasource.TimeRange, target Target) (*scalyr.BucketRequest, error) {
+	if target.IntervalType == IntervalTypeWindow {
+		return &scalyr.BucketRequest{
+			From:            trange.FromEpochMs/1000 - int64(target.SecondsInterval),
+			To:              trange.ToEpochMs / 1000,
+			IntervalSeconds: target.SecondsInterval,
+		}, nil
+	}
+	start := time.Unix(trange.FromEpochMs/1000, (trange.FromEpochMs%1000)*int64(time.Millisecond))
+	end := time.Unix(trange.ToEpochMs/1000, (trange.ToEpochMs%1000)*int64(time.Millisecond))
+	seconds := 60 //default option for seconds in minute
+	switch target.ChosenType {
+	case FixedIntervalMinute:
+		start = time.Date(start.UTC().Year(), start.UTC().Month(), start.UTC().Day(), start.UTC().Hour(), start.UTC().Minute(), 0, 0, start.UTC().Location())
+		end = time.Date(end.UTC().Year(), end.UTC().Month(), end.UTC().Day(), end.UTC().Hour(), end.UTC().Minute(), 0, 0, end.UTC().Location())
+	case FixedIntervalHour:
+		start = time.Date(start.UTC().Year(), start.UTC().Month(), start.UTC().Day(), start.UTC().Hour(), 0, 0, 0, start.UTC().Location())
+		end = time.Date(end.UTC().Year(), end.UTC().Month(), end.UTC().Day(), end.UTC().Hour(), 0, 0, 0, end.UTC().Location())
+		seconds = 60 * 60
+	case FixedIntervalDay:
+		start = time.Date(start.UTC().Year(), start.UTC().Month(), start.UTC().Day(), 0, 0, 0, 0, start.UTC().Location())
+		end = time.Date(end.UTC().Year(), end.UTC().Month(), end.UTC().Day(), 0, 0, 0, 0, end.UTC().Location())
+		seconds = 60 * 60 * 24
+	case FixedIntervalWeek:
+		fallthrough
+	case FixedIntervalMonth:
+		return nil, errors.New(fmt.Sprintf("Selection '%s' Not yet implemented", target.ChosenType))
+	}
+
+	return &scalyr.BucketRequest{
+		From:            start.Unix() - int64(seconds),
+		To:              end.Unix(),
+		IntervalSeconds: seconds,
+	}, nil
 }
 
 //Converts the alert request into the format expected by the proxy server

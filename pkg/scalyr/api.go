@@ -28,6 +28,12 @@ type Response struct {
 	Message string `json:"message"`
 }
 
+type BucketRequest struct {
+	From            int64
+	To              int64
+	IntervalSeconds int
+}
+
 const (
 	QueryURL           = "https://www.scalyr.com/api/query"
 	NumericQueryURL    = "https://www.scalyr.com/api/numericQuery"
@@ -87,21 +93,21 @@ func (s *Scalyr) TimeSeriesQuery(queries []TimeseriesQuery) (*TimeseriesQueryRes
 
 //GetBuckets gets the number of buckets that would be appropriate for the passed in from and to parameters, giving each bucket
 //approximately the number of seconds defined in intervalSeconds
-func GetBuckets(from int64, to int64, intervalSeconds int) (int, error) {
-	if from >= to {
-		return -1, errors.New(fmt.Sprintf("GetBuckets(): param {from} (%v) was greater than param {to} (%v) ", from, to))
+func GetBuckets(data *BucketRequest) (int, error) {
+	if data.From >= data.To {
+		return -1, errors.New(fmt.Sprintf("GetBuckets(): param {from} (%v) was greater than param {to} (%v) ", data.From, data.To))
 	}
-	timeframe := to - from
-	if intervalSeconds < 1 {
-		return -1, errors.New(fmt.Sprintf("GetBuckets(): intervalSeconds must be at least 1, received (%v) ", intervalSeconds))
+	timeframe := data.To - data.From
+	if data.IntervalSeconds < 1 {
+		return -1, errors.New(fmt.Sprintf("GetBuckets(): intervalSeconds must be at least 1, received (%v) ", data.IntervalSeconds))
 	}
-	if int64(intervalSeconds) >= timeframe {
+	if int64(data.IntervalSeconds) >= timeframe {
 		return 1, nil
 	}
 
-	buckets := timeframe / int64(intervalSeconds)
+	buckets := timeframe / int64(data.IntervalSeconds)
 	if buckets > MaxBuckets {
-		return -1, errors.New(fmt.Sprintf("GetBuckets(): calculated buckets too large. Max allowed buckets is %d. Params: from (%v), to (%v), intervalSeconds (%v)", MaxBuckets, from, to, intervalSeconds))
+		return -1, errors.New(fmt.Sprintf("GetBuckets(): calculated buckets too large. Max allowed buckets is %d. Params: from (%v), to (%v), intervalSeconds (%v)", MaxBuckets, data.From, data.To, data.IntervalSeconds))
 	}
 	return int(buckets), nil
 }
