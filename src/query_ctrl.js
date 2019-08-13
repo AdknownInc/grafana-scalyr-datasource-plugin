@@ -79,7 +79,7 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
     }
 
     getComplexParts() {
-        if(this.target.type !== 'complex numeric query' || !this.target.showQueryParts || !this.datasource.parseComplex) {
+        if(this.target.hide === true || this.target.type !== 'complex numeric query' || !this.target.showQueryParts || !this.datasource.parseComplex) {
             return;
         }
 

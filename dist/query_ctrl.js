@@ -138,7 +138,7 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                     value: function getComplexParts() {
                         var _this2 = this;
 
-                        if (this.target.type !== 'complex numeric query' || !this.target.showQueryParts || !this.datasource.parseComplex) {
+                        if (this.target.hide === true || this.target.type !== 'complex numeric query' || !this.target.showQueryParts || !this.datasource.parseComplex) {
                             return;
                         }
 
