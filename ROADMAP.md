@@ -3,7 +3,7 @@
 This is probably misnamed but this is where I'll be documenting the features that need to be implemented for the backend plugin to entirely replace a proxy server.
 
 - [x] Basic Numeric Queries 
-- [ ] Complex Numeric Queries
+- [ ] Complex Numeric Queries (to be tested)
 - [ ] Fixed Time Window Interval Type
 - [ ] Returning Complex Query components
 

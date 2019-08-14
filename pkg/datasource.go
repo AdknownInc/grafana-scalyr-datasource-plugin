@@ -136,7 +136,7 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 			}
 			response.Results = append(response.Results, r)
 		case ScalyrQueryComplexNumerical:
-
+			//resp, err := svc.ComplexTimeSeriesQuery()
 		}
 	}
 

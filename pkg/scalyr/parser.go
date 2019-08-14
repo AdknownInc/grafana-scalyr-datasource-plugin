@@ -15,6 +15,11 @@ import (
 	"strings"
 )
 
+type Token struct {
+	Variable string      //the respresentative variable for the token
+	Data     interface{} //the data that the token holds
+}
+
 type ParseVar struct {
 	Id         string
 	Filter     string
@@ -146,37 +151,58 @@ func ParseComplexExpression(expression string, start string, end string, buckets
 	return varArray, nil
 }
 
-/**
- * infixToRPN changes infix notation equation in to an array in reverse polish notation
- * @see http://andreinc.net/2010/10/05/converting-infix-to-rpn-shunting-yard-algorithm/
- * @see https://en.wikipedia.org/wiki/Reverse_Polish_notation
- *
- * @param array $inputExpressions
- *
- * @return \SplQueue the expression in RPN
- */
+//convertInfixNotationToReversePolishNotation changes an infix notation equation in to
+//an array in reverse polish notation.
+//@see http://andreinc.net/2010/10/05/converting-infix-to-rpn-shunting-yard-algorithm/
+//@see https://en.wikipedia.org/wiki/Reverse_Polish_notation
 func convertInfixNotationToReversePolishNotation(inputExpressions []string) *queue.Queue {
 	curStack := stack.New()
 	output := queue.New(0)
+	var secondToken string
+	var stackToken Token
 
 	//Change iterate though infix and change the order to RPN
-	for _, token := range inputExpressions {
+	for _, tokenStr := range inputExpressions {
+		token := Token{
+			Variable: tokenStr,
+			Data:     nil,
+		}
 		if isOperator(token) {
 			for curStack.Len() > 0 && isOperator(curStack.Peek()) {
-				if precedenceCompare(token, curStack.Peek()) <= 0 {
-					output.Put(curStack.Pop())
+				if i, ok := curStack.Peek().(string); !ok {
+					panic("a non string ended up in the stack somehow")
+				} else {
+					secondToken = i
+				}
+				if precedenceCompare(token, secondToken) <= 0 {
+					err := output.Put(curStack.Pop())
+					if err != nil {
+						panic(err)
+					}
 					continue
 				}
 				break
 			}
 			curStack.Push(token)
 		} else {
-			if token == "(" {
+			if token.Variable == "(" {
 				curStack.Push(token)
 			} else {
-				if token == ")" {
-					for curStack.Len() > 0 && curStack.Peek() != "(" {
-						output.Put(curStack.Pop())
+				if token.Variable == ")" {
+					for curStack.Len() > 0 {
+						if i, ok := curStack.Peek().(Token); !ok {
+							panic(fmt.Sprintf("Non Token value found in stack: %v", curStack.Peek()))
+						} else {
+							stackToken = i
+						}
+						if stackToken.Variable == "(" {
+							break
+						}
+						err := output.Put(curStack.Pop())
+						if err != nil {
+							//TODO: pass up proper
+							panic(err)
+						}
 					}
 					curStack.Pop()
 				} else {
@@ -208,30 +234,39 @@ func convertInfixNotationToReversePolishNotation(inputExpressions []string) *que
  *
  * @return bool whether the input is an operator
  */
-func isOperator(inputOperator string) bool {
-	switch inputOperator {
-	case "+":
-		fallthrough
-	case "-":
-		fallthrough
-	case "*":
-		fallthrough
-	case "/":
-		return true
-	default:
+func isOperator(token interface{}) bool {
+	if inputOperator, ok := token.(Token); !ok {
 		return false
+	} else {
+		switch inputOperator.Variable {
+		case "+":
+			fallthrough
+		case "-":
+			fallthrough
+		case "*":
+			fallthrough
+		case "/":
+			return true
+		default:
+			return false
+		}
 	}
 }
 
-/**
- * precedenceCompare Compares the precedence for two operators so they can follow BEDMAS
- *
- * @param $firstToken  string the first operator
- * @param $secondToken string the second operator
- *
- * @return int a number representing the precedence level
- */
-func precedenceCompare(firstToken string, secondToken string) int {
+//precedenceCompare Compares the precedence for two operators so they can follow BEDMAS
+func precedenceCompare(t1 interface{}, t2 interface{}) int {
+	var firstToken, secondToken Token
+	if i, ok := t1.(Token); !ok {
+		panic("t1 was not a Token")
+	} else {
+		firstToken = i
+	}
+	if i, ok := t2.(Token); !ok {
+		panic("t2 was not a Token")
+	} else {
+		secondToken = i
+	}
+
 	//Higher precedence operators
 	higherPrecedence := map[string]int{
 		"*": 0,
@@ -240,27 +275,21 @@ func precedenceCompare(firstToken string, secondToken string) int {
 
 	//Set the first precedence
 	firstPrecedence := PrecedenceLevel1
-	if _, ok := higherPrecedence[firstToken]; ok {
+	if _, ok := higherPrecedence[firstToken.Variable]; ok {
 		firstPrecedence = PrecedenceLevel2
 	}
 
 	//Set the second precedence
 	secondPrecedence := PrecedenceLevel1
-	if _, ok := higherPrecedence[secondToken]; ok {
+	if _, ok := higherPrecedence[secondToken.Variable]; ok {
 		secondPrecedence = PrecedenceLevel2
 	}
 
 	return firstPrecedence - secondPrecedence
 }
 
-/**
- * evaluateExpression runs through all the operands and operators and calls operations on them
- *
- * @param string $expression operators and operands in RPN order
- * @param array  $varArray   values to be put back into the equation
- *
- * @return mixed a single object representing the result of the expression
- */
+//NewEvaluateExpression runs through all the operators/operands and
+//calls the Scalyr query requests. It then applies the math operations on the results of the Scalyr queries.
 func NewEvaluateExpression(expression string, varArray []*ParseVar) (*TimeseriesQueryResponse, error) {
 	finalResponse := &TimeseriesQueryResponse{
 		Status:        "success",
@@ -275,10 +304,16 @@ func NewEvaluateExpression(expression string, varArray []*ParseVar) (*Timeseries
 	rpnExpression := convertInfixNotationToReversePolishNotation(strings.Split(expression, ""))
 
 	curStack := stack.New()
+	var token Token
 	for !rpnExpression.Empty() {
-		token, err := rpnExpression.Get(1)
+		queueEl, err := rpnExpression.Get(1)
 		if err != nil {
 			panic(err)
+		}
+		if i, ok := queueEl[0].(Token); !ok {
+			panic(err)
+		} else {
+			token = i
 		}
 
 		if isOperator(token) {
@@ -287,7 +322,7 @@ func NewEvaluateExpression(expression string, varArray []*ParseVar) (*Timeseries
 			curStack.Push(result)
 		} else {
 			//Operand
-			idx, err := strconv.Atoi(token)
+			idx, err := strconv.Atoi(token.Variable)
 			if err != nil {
 				panic(err)
 			}
@@ -309,8 +344,25 @@ func NewEvaluateExpression(expression string, varArray []*ParseVar) (*Timeseries
  *
  * @return array|float|int|string a single object representing the result of the expression
  */
-func performOperation(operator string, firstVar *ParseVar, secondVar *ParseVar) *ParseVar {
-	switch operator {
+func performOperation(op interface{}, v1 interface{}, v2 interface{}) *ParseVar {
+	var operator Token
+	var firstVar, secondVar *ParseVar
+	if i, ok := op.(Token); !ok {
+		panic("in performOperation(), op was not a Token")
+	} else {
+		operator = i
+	}
+	if i, ok := v1.(*ParseVar); !ok {
+		panic("in performOperation(), v1 was not a ParseVar pointer")
+	} else {
+		firstVar = i
+	}
+	if i, ok := v2.(*ParseVar); !ok {
+		panic("in performOperation(), v2 was not a ParseVar pointer")
+	} else {
+		secondVar = i
+	}
+	switch operator.Variable {
 	case "+":
 		return logic(firstVar, secondVar, add)
 	case "-":
@@ -322,7 +374,7 @@ func performOperation(operator string, firstVar *ParseVar, secondVar *ParseVar) 
 	case "*":
 		return logic(firstVar, secondVar, mul)
 	default:
-		return -1
+		return nil
 	}
 }
 

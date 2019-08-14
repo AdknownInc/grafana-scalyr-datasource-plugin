@@ -91,7 +91,7 @@ func (s *Scalyr) TimeSeriesQuery(queries []*TimeseriesQuery) (*TimeseriesQueryRe
 	return &bodyresp, nil
 }
 
-func (s *Scalyr) ComplexTimeSeriesQuery(queries []TimeseriesQuery) (*TimeseriesQueryResponse, error) {
+func (s *Scalyr) ComplexTimeSeriesQuery(queries []*TimeseriesQuery) (*TimeseriesQueryResponse, error) {
 	//parse out the different filters
 	totalResponse := &TimeseriesQueryResponse{
 		Status:        "success",
@@ -100,27 +100,32 @@ func (s *Scalyr) ComplexTimeSeriesQuery(queries []TimeseriesQuery) (*TimeseriesQ
 		Message:       "Not Yet Implemented",
 	}
 
-	//for i, query := range queries {
-	//	fullVarExpr := ""
-	//	simpleExpressions, err := ParseComplexExpression(query.Filter, query.StartTime, query.EndTime, query.Buckets, &fullVarExpr, false)
-	//	if err != nil {
-	//		return nil, errors.Wrap(err, fmt.Sprintf("Error parsing query %d with filter %s", i, query.Filter[0:8]))
-	//	}
-	//	//individualExpressions := simpleExpressions
-	//	for k, params := range simpleExpressions {
-	//		if params.Query != nil {
-	//			resp, err := s.TimeSeriesQuery([]*TimeseriesQuery{
-	//				params.Query,
-	//			})
-	//			if err != nil {
-	//				return nil, errors.Wrap(err, fmt.Sprintf("Error in query %d on segment %s", i, params.Filter))
-	//			}
-	//			simpleExpressions[k].Response = resp
-	//		}
-	//	}
-	//
-	//
-	//}
+	for i, query := range queries {
+		fullVarExpr := ""
+		simpleExpressions, err := ParseComplexExpression(query.Filter, query.StartTime, query.EndTime, query.Buckets, &fullVarExpr, false)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("Error parsing query %d with filter %s", i, query.Filter[0:8]))
+		}
+		//individualExpressions := simpleExpressions
+		for k, params := range simpleExpressions {
+			if params.Query != nil {
+				resp, err := s.TimeSeriesQuery([]*TimeseriesQuery{
+					params.Query,
+				})
+				if err != nil {
+					return nil, errors.Wrap(err, fmt.Sprintf("Error in query %d on segment %s", i, params.Filter))
+				}
+				simpleExpressions[k].Response = resp
+			}
+		}
+		fullResponse, err := NewEvaluateExpression(fullVarExpr, simpleExpressions)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to evaluate complex query after making the simple api calls")
+		}
+		//add fullresponse to the total response
+		totalResponse.Results = append(totalResponse.Results, fullResponse.Results...)
+		totalResponse.ExecutionTime += fullResponse.ExecutionTime
+	}
 
 	return totalResponse, nil
 }
