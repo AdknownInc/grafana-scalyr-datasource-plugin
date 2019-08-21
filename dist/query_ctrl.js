@@ -82,7 +82,7 @@ System.register(['app/plugins/sdk'], function (_export, _context) {
                     // this.target.interval = this.target.interval || 60;
                     _this.graphFunctions = ['mean', 'min', 'max', 'sumPerSecond', 'median', 'p10', 'p50', '95', '99', '999', 'p(n)', 'fraction', '', 'rate', 'count'];
                     _this.intervalTypes = [INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED];
-                    _this.supportedIntervalTypes = ['minute', 'hour', 'day', 'week', 'month'];
+                    _this.supportedIntervalTypes = ['minute', 'hour', 'day', 'week'];
                     _this.target.graphFunction = _this.target.graphFunction || _this.graphFunctions[0];
                     _this.target.intervalType = _this.target.intervalType || _this.intervalTypes[0];
                     _this.target.chosenType = _this.target.chosenType || _this.supportedIntervalTypes[0];

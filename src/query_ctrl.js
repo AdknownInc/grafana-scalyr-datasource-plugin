@@ -19,7 +19,7 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
             INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED
         ];
         this.supportedIntervalTypes = [
-            'minute', 'hour', 'day', 'week', 'month'
+            'minute', 'hour', 'day', 'week'
         ];
         this.target.graphFunction = this.target.graphFunction || this.graphFunctions[0];
         this.target.intervalType = this.target.intervalType || this.intervalTypes[0];

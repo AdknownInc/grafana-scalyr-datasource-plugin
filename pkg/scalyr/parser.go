@@ -25,7 +25,7 @@ type ParseVar struct {
 	Filter     string
 	Query      *TimeseriesQuery
 	Response   *TimeseriesQueryResponse
-	ConstValue int //this is just for the constant values
+	ConstValue float64 //this is just for the constant values
 }
 
 const (
@@ -67,15 +67,40 @@ func ParseComplexExpression(expression string, start string, end string, buckets
 	 * Match any constant
 	 * \\b  boundry on the left side
 	 * \\d+ one or more digits
+	 * (?:\.\d+)? Non capturing group to check if a decimal is there
 	 * \\b  boundry on the right side
 	 */
-	//TODO: change the commented out regex to support decimal constants
-	//numReg := regexp.MustCompile(`\b\d+(\.\d+)?\b`)
-	numReg := regexp.MustCompile(`\b\d+\b`)
+	numReg := regexp.MustCompile(`\b\d+(?:\.\d+)?\b`)
 
 	//Replace all API calls with a placeholder with var prefix
 	varCount := 0
 	varArray := make([]*ParseVar, 0)
+
+	//Replace all constants with a placeholder with var prefix
+	//Match all constants
+	for {
+		replaceString := fmt.Sprintf("%s%d", ReplacePrefix, varCount)
+		constantSubmatch := numReg.FindStringSubmatch(expression)
+		if len(constantSubmatch) == 0 {
+			break
+		}
+		val, err := strconv.ParseFloat(constantSubmatch[0], 64)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("Failed to parse number '%s' to int", constantSubmatch[0]))
+		}
+
+		varArray = append(varArray, &ParseVar{
+			Id:         replaceString,
+			Filter:     constantSubmatch[0],
+			Query:      nil,
+			Response:   nil,
+			ConstValue: val,
+		})
+
+		varCount++
+		expression = strings.Replace(expression, constantSubmatch[0], replaceString, 1)
+	}
+
 	//Match all scalyr parts
 	for {
 		replaceString := fmt.Sprintf("%s%d", ReplacePrefix, varCount)
@@ -100,7 +125,7 @@ func ParseComplexExpression(expression string, start string, end string, buckets
 		//}
 		//Get the type of query based of of keyword
 
-		varArray[varCount] = &ParseVar{
+		varArray = append(varArray, &ParseVar{
 			Id:     replaceString,
 			Filter: submatch[0],
 			Query: &TimeseriesQuery{
@@ -113,36 +138,11 @@ func ParseComplexExpression(expression string, start string, end string, buckets
 			},
 			Response:   nil,
 			ConstValue: 0,
-		}
+		})
 
 		varCount++
 
-		//replace the first matching instance of graphReg in expression with the replaceString, limited to 1 replacement. Keep tarack of the found count for the next if statement check
-		expression = strings.Replace(expression, submatch[0], replaceString, 1)
-	}
-
-	//Replace all constants with a placeholder with var prefix
-	//Match all constants
-	for {
-		replaceString := fmt.Sprintf("%s%d", ReplacePrefix, varCount)
-		submatch := numReg.FindStringSubmatch(expression)
-		if len(submatch) == 0 {
-			break
-		}
-		val, err := strconv.Atoi(submatch[0])
-		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("Failed to parse number '%s' to int", submatch[0]))
-		}
-
-		varArray[varCount] = &ParseVar{
-			Id:         replaceString,
-			Filter:     submatch[0],
-			Query:      nil,
-			Response:   nil,
-			ConstValue: val,
-		}
-
-		varCount++
+		//replace the first matching instance of graphReg in expression with the replaceString, limited to 1 replacement. Keep track of the found count for the next if statement check
 		expression = strings.Replace(expression, submatch[0], replaceString, 1)
 	}
 
@@ -158,7 +158,6 @@ func ParseComplexExpression(expression string, start string, end string, buckets
 func convertInfixNotationToReversePolishNotation(inputExpressions []string) *queue.Queue {
 	curStack := stack.New()
 	output := queue.New(0)
-	var secondToken string
 	var stackToken Token
 
 	//Change iterate though infix and change the order to RPN
@@ -169,12 +168,7 @@ func convertInfixNotationToReversePolishNotation(inputExpressions []string) *que
 		}
 		if isOperator(token) {
 			for curStack.Len() > 0 && isOperator(curStack.Peek()) {
-				if i, ok := curStack.Peek().(string); !ok {
-					panic("a non string ended up in the stack somehow")
-				} else {
-					secondToken = i
-				}
-				if precedenceCompare(token, secondToken) <= 0 {
+				if precedenceCompare(token, curStack.Peek()) <= 0 {
 					err := output.Put(curStack.Pop())
 					if err != nil {
 						panic(err)
@@ -291,12 +285,7 @@ func precedenceCompare(t1 interface{}, t2 interface{}) int {
 //NewEvaluateExpression runs through all the operators/operands and
 //calls the Scalyr query requests. It then applies the math operations on the results of the Scalyr queries.
 func NewEvaluateExpression(expression string, varArray []*ParseVar) (*TimeseriesQueryResponse, error) {
-	finalResponse := &TimeseriesQueryResponse{
-		Status:        "success",
-		Results:       nil,
-		ExecutionTime: 0,
-		Message:       "",
-	}
+	totalExecutionTime := 0
 	for _, str := range []string{" ", "v", "a", "r"} {
 		expression = strings.ReplaceAll(expression, str, "")
 	}
@@ -310,10 +299,10 @@ func NewEvaluateExpression(expression string, varArray []*ParseVar) (*Timeseries
 		if err != nil {
 			panic(err)
 		}
-		if i, ok := queueEl[0].(Token); !ok {
+		if val, ok := queueEl[0].(Token); !ok {
 			panic(err)
 		} else {
-			token = i
+			token = val
 		}
 
 		if isOperator(token) {
@@ -327,11 +316,26 @@ func NewEvaluateExpression(expression string, varArray []*ParseVar) (*Timeseries
 				panic(err)
 			}
 			curStack.Push(varArray[idx])
+			if varArray[idx].Response != nil {
+				totalExecutionTime += varArray[idx].Response.ExecutionTime
+			}
 			continue
 		}
 	}
 
-	//return curStack.Pop()
+	var finalResult *ParseVar
+	if val, ok := curStack.Pop().(*ParseVar); !ok {
+		panic("Final result of evaluated expression was somehow not a ParseVar Pointer")
+	} else {
+		finalResult = val
+	}
+
+	finalResponse := &TimeseriesQueryResponse{
+		Status:        "success",
+		Results:       finalResult.Response.Results,
+		ExecutionTime: totalExecutionTime,
+		Message:       "",
+	}
 	return finalResponse, nil
 }
 
@@ -473,6 +477,6 @@ func logic(firstVar *ParseVar, secondVar *ParseVar, op func(float64, float64) fl
 		Filter:     newFilter,
 		Query:      nil,
 		Response:   nil,
-		ConstValue: int(val),
+		ConstValue: val,
 	}
 }
