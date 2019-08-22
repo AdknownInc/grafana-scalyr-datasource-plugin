@@ -2,10 +2,9 @@ package main
 
 import (
 	"github.com/grafana/grafana_plugin_model/go/datasource"
-	"os"
-
 	plugin "github.com/hashicorp/go-plugin"
 	"log"
+	"os"
 )
 
 func main() {

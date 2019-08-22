@@ -1,4 +1,4 @@
-import {GenericDatasource} from './datasource';
+import {ScalyrDatasource} from './datasource';
 import {ScalyrDatasourceQueryCtrl} from './query_ctrl';
 import {ScalyrConfigCtrl} from './config_ctrl';
 
@@ -9,7 +9,7 @@ class GenericAnnotationsQueryCtrl {}
 GenericAnnotationsQueryCtrl.templateUrl = 'partials/annotations.editor.html';
 
 export {
-  GenericDatasource as Datasource,
+  ScalyrDatasource as Datasource,
   ScalyrDatasourceQueryCtrl as QueryCtrl,
   ScalyrConfigCtrl as ConfigCtrl,
   GenericQueryOptionsCtrl as QueryOptionsCtrl,

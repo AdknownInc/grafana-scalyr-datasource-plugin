@@ -1,6 +1,6 @@
 'use strict';
 
-System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_export, _context) {
+System.register(['app/plugins/sdk'], function (_export, _context) {
     "use strict";
 
     var QueryCtrl, _typeof, _createClass, TIME_INDEX, INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED, ScalyrDatasourceQueryCtrl;
@@ -38,7 +38,7 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
     return {
         setters: [function (_appPluginsSdk) {
             QueryCtrl = _appPluginsSdk.QueryCtrl;
-        }, function (_cssQueryEditorCss) {}],
+        }],
         execute: function () {
             _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
                 return typeof obj;
@@ -77,13 +77,12 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                     var _this = _possibleConstructorReturn(this, (ScalyrDatasourceQueryCtrl.__proto__ || Object.getPrototypeOf(ScalyrDatasourceQueryCtrl)).call(this, $scope, $injector));
 
                     _this.scope = $scope;
-
                     _this.target.filter = _this.target.filter || "";
                     _this.target.secondsInterval = _this.target.secondsInterval || 60;
                     // this.target.interval = this.target.interval || 60;
                     _this.graphFunctions = ['mean', 'min', 'max', 'sumPerSecond', 'median', 'p10', 'p50', '95', '99', '999', 'p(n)', 'fraction', '', 'rate', 'count'];
                     _this.intervalTypes = [INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED];
-                    _this.supportedIntervalTypes = ['minute', 'hour', 'day', 'week', 'month'];
+                    _this.supportedIntervalTypes = ['minute', 'hour', 'day', 'week'];
                     _this.target.graphFunction = _this.target.graphFunction || _this.graphFunctions[0];
                     _this.target.intervalType = _this.target.intervalType || _this.intervalTypes[0];
                     _this.target.chosenType = _this.target.chosenType || _this.supportedIntervalTypes[0];
@@ -95,9 +94,7 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                     _this.serializer = $httpParamSerializer;
 
                     _this.datasource.queryControls.push(_this);
-
                     _this.datasource.panelName = _this.panel.title;
-
                     _this.target.showQueryParts = _this.datasource.parseComplex;
                     return _this;
                 }
@@ -215,12 +212,20 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                 }, {
                     key: 'getTargetTimeframe',
                     value: function getTargetTimeframe(target) {
+                        if (this.datasource.response.data.length === 0) {
+                            //return a default 24 hours if a response doesn't have data
+                            var now = new Date();
+                            return {
+                                startTime: now.getTime() - 1000 * 60 * 60 * 24,
+                                endTime: now.getTime()
+                            };
+                        }
                         var _iteratorNormalCompletion2 = true;
                         var _didIteratorError2 = false;
                         var _iteratorError2 = undefined;
 
                         try {
-                            for (var _iterator2 = this.panelCtrl.dataList[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                            for (var _iterator2 = this.datasource.response.data[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
                                 var dataSet = _step2.value;
 
                                 if (dataSet.target === target) {
@@ -230,6 +235,7 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                                     };
                                 }
                             }
+                            //default to returning the from and to values of the first panel/dashboard
                         } catch (err) {
                             _didIteratorError2 = true;
                             _iteratorError2 = err;
@@ -244,6 +250,12 @@ System.register(['app/plugins/sdk', './css/query-editor.css!'], function (_expor
                                 }
                             }
                         }
+
+                        var defaultData = this.datasource.response.data[0];
+                        return {
+                            startTime: defaultData.datapoints[0][TIME_INDEX],
+                            endTime: defaultData.datapoints.slice(-1)[0][TIME_INDEX]
+                        };
                     }
                 }]);
 

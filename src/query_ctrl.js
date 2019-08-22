@@ -1,5 +1,4 @@
 import {QueryCtrl} from 'app/plugins/sdk';
-import './css/query-editor.css!'
 
 const TIME_INDEX = 1;
 const INTERVAL_TYPE_WINDOW = 'window';
@@ -9,10 +8,7 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
 
     constructor($scope, $injector, $window, $httpParamSerializer) {
         super($scope, $injector);
-
         this.scope = $scope;
-
-
         this.target.filter = this.target.filter || "";
         this.target.secondsInterval = this.target.secondsInterval || 60;
         // this.target.interval = this.target.interval || 60;
@@ -23,7 +19,7 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
             INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED
         ];
         this.supportedIntervalTypes = [
-            'minute', 'hour', 'day', 'week', 'month'
+            'minute', 'hour', 'day', 'week'
         ];
         this.target.graphFunction = this.target.graphFunction || this.graphFunctions[0];
         this.target.intervalType = this.target.intervalType || this.intervalTypes[0];
@@ -40,9 +36,7 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
         this.serializer = $httpParamSerializer;
 
         this.datasource.queryControls.push(this);
-
         this.datasource.panelName = this.panel.title;
-
         this.target.showQueryParts = this.datasource.parseComplex;
     }
 
@@ -128,7 +122,6 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
 
             queryParams = Object.assign(queryParams, timeFrame);
 
-
             let qs = this.serializer(queryParams);
             let url = 'https://www.scalyr.com/events?' + qs;
             this.window.open(url, '_blank');
@@ -144,7 +137,15 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
      * @returns {{startTime: int, endTime: int}}
      */
     getTargetTimeframe(target) {
-        for (let dataSet of this.panelCtrl.dataList) {
+        if (this.datasource.response.data.length === 0) {
+            //return a default 24 hours if a response doesn't have data
+            let now = new Date();
+            return {
+                startTime: now.getTime() - (1000 * 60 * 60 * 24),
+                endTime: now.getTime()
+            }
+        }
+        for (let dataSet of this.datasource.response.data) {
             if (dataSet.target === target) {
                 return {
                     startTime: dataSet.datapoints[0][TIME_INDEX],
@@ -152,6 +153,12 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
                 }
             }
         }
+        //default to returning the from and to values of the first panel/dashboard
+        let defaultData = this.datasource.response.data[0];
+        return {
+            startTime: defaultData.datapoints[0][TIME_INDEX],
+            endTime: defaultData.datapoints.slice(-1)[0][TIME_INDEX]
+        };
     }
 }
 
