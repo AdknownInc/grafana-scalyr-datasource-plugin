@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"github.com/golang-collections/collections/stack"
 	"github.com/golang-collections/go-datastructures/queue"
-	"github.com/pkg/errors"
 	"regexp"
 	"strconv"
 	"strings"
@@ -61,7 +60,7 @@ func ParseComplexExpression(expression string, start string, end string, buckets
 	 * Part 2
 	 * \\((.*?)\\) matches left ( and everything inside up until right ) in a non greedy way
 	 */
-	graphReg := regexp.MustCompile(`(?P<function>count|rate|mean|min|max|sumPerSecond|median|p|p\d+)\(((?P<field>[a-zA-Z]+) where )?(?P<filter>.*?)\)`)
+	functionRegex := `(?P<function>count|rate|mean|min|max|sumPerSecond|median|p|p\d+)\(((?P<field>[a-zA-Z]+) where )?(?P<filter>.*?)\)`
 
 	/*
 	 * Match any constant
@@ -70,7 +69,9 @@ func ParseComplexExpression(expression string, start string, end string, buckets
 	 * (?:\.\d+)? Non capturing group to check if a decimal is there
 	 * \\b  boundry on the right side
 	 */
-	numReg := regexp.MustCompile(`\b\d+(?:\.\d+)?\b`)
+	numRegex := `\b\d+(?:\.\d+)?\b`
+
+	regex := regexp.MustCompile(functionRegex + "|" + numRegex)
 
 	//Replace all API calls with a placeholder with var prefix
 	varCount := 0
@@ -80,70 +81,58 @@ func ParseComplexExpression(expression string, start string, end string, buckets
 	//Match all constants
 	for {
 		replaceString := fmt.Sprintf("%s%d", ReplacePrefix, varCount)
-		constantSubmatch := numReg.FindStringSubmatch(expression)
-		if len(constantSubmatch) == 0 {
-			break
-		}
-		val, err := strconv.ParseFloat(constantSubmatch[0], 64)
-		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("Failed to parse number '%s' to int", constantSubmatch[0]))
-		}
-
-		varArray = append(varArray, &ParseVar{
-			Id:         replaceString,
-			Filter:     constantSubmatch[0],
-			Query:      nil,
-			Response:   nil,
-			ConstValue: val,
-		})
-
-		varCount++
-		expression = strings.Replace(expression, constantSubmatch[0], replaceString, 1)
-	}
-
-	//Match all scalyr parts
-	for {
-		replaceString := fmt.Sprintf("%s%d", ReplacePrefix, varCount)
-		//need FindAllStringSubmatch
-		submatch := graphReg.FindStringSubmatch(expression)
+		submatch := regex.FindStringSubmatch(expression)
 		if len(submatch) == 0 {
 			break
 		}
-
-		matches := make(map[string]string)
-		for i, name := range graphReg.SubexpNames() {
-			if i != 0 && name != "" {
-				matches[name] = submatch[i]
+		val, err := strconv.ParseFloat(submatch[0], 64)
+		if err != nil {
+			matches := make(map[string]string)
+			for i, name := range regex.SubexpNames() {
+				if i != 0 && name != "" {
+					matches[name] = submatch[i]
+				}
 			}
-		}
-		//log.Debug("matches: %s", strings.Join(matches, "|")) TODO: log the matches that were matched
-		filter := matches["filter"]
-		graphFunction := matches["function"]
-		//field := ""
-		//if _, ok := matches["field"]; ok {
-		//	field = matches["field"]
-		//}
-		//Get the type of query based of of keyword
+			//log.Debug("matches: %s", strings.Join(matches, "|")) TODO: log the matches that were matched
+			filter := matches["filter"]
+			graphFunction := matches["function"]
+			//field := ""
+			//if _, ok := matches["field"]; ok {
+			//	field = matches["field"]
+			//}
+			//Get the type of query based of of keyword
 
-		varArray = append(varArray, &ParseVar{
-			Id:     replaceString,
-			Filter: submatch[0],
-			Query: &TimeseriesQuery{
-				Filter:    filter,
-				Buckets:   buckets,
-				Function:  graphFunction,
-				StartTime: start,
-				EndTime:   end,
-				Priority:  "low",
-			},
-			Response:   nil,
-			ConstValue: 0,
-		})
+			varArray = append(varArray, &ParseVar{
+				Id:     replaceString,
+				Filter: submatch[0],
+				Query: &TimeseriesQuery{
+					Filter:    filter,
+					Buckets:   buckets,
+					Function:  graphFunction,
+					StartTime: start,
+					EndTime:   end,
+					Priority:  "low",
+				},
+				Response:   nil,
+				ConstValue: 0,
+			})
+			expression = strings.Replace(expression, submatch[0], replaceString, 1)
+		} else {
+			varArray = append(varArray, &ParseVar{
+				Id:         replaceString,
+				Filter:     submatch[0],
+				Query:      nil,
+				Response:   nil,
+				ConstValue: val,
+			})
+			//If you try to replace like above, and you have a constant that is less then or equal to the number of 'vars'
+			//it will just replace in the 'var'
+			//i.e. var0 + var 1 + 0 will turn into varvar1 + var1 + 0
+			thisNumRegex := regexp.MustCompile(`\b` + submatch[0] + `\b`)
+			expression = thisNumRegex.ReplaceAllString(expression, replaceString)
+		}
 
 		varCount++
-
-		//replace the first matching instance of graphReg in expression with the replaceString, limited to 1 replacement. Keep track of the found count for the next if statement check
-		expression = strings.Replace(expression, submatch[0], replaceString, 1)
 	}
 
 	*fullVariableExpression = expression
