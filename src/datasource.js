@@ -110,7 +110,9 @@ export class ScalyrDatasource {
                 });
                 this.response = res;
                 for (let queryControl of this.queryControls) {
-                    queryControl.getComplexParts();
+                    if (queryControl.target.type === 'complex numeric query') {
+                        queryControl.getComplexParts();
+                    }
                 }
                 return res;
             });

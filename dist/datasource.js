@@ -162,7 +162,9 @@ System.register(["lodash"], function (_export, _context) {
                                 for (var _iterator = _this.queryControls[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
                                     var queryControl = _step.value;
 
-                                    queryControl.getComplexParts();
+                                    if (queryControl.target.type === 'complex numeric query') {
+                                        queryControl.getComplexParts();
+                                    }
                                 }
                             } catch (err) {
                                 _didIteratorError = true;
