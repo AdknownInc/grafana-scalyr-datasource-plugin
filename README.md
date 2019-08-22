@@ -1,7 +1,7 @@
 # grafana-scalyr-datasource-plugin
-A plugin for using scalyr's data in grafana. Requires a proxy server (implementation example linked below)
+A plugin for using scalyr's data in grafana. 
 
-Work has been started on a backend plugin that would remove the need for a proxy server. Check the branch `test_quick_convert` for a roadmap.
+The backend plugin has been completed and a proxy server is no longer needed!
 
 ## Variable Templating
 This plugin makes use of Grafana's variables feature. However, due to the fact that Scalyr uses "$" as a special character, this plugin uses "~" as a variable identifier
@@ -57,9 +57,9 @@ Note: Updated the required version of Grafana to 5.3.x because JsonData interpol
 Dependencies:
 - npm
 - go1.12+
-- go dep
+- go mod
 
-To build backend alerting plugin, this repo will need to be in your $GOPATH.
+To build the backend plugin, this repo will need to be in your $GOPATH.
 
 To setup this directory for development/compilation, in the root directory run the following:
 `make first_pull`
