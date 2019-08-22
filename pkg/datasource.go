@@ -19,6 +19,14 @@ type ScalyrDatasource struct {
 	plugin.NetRPCUnsupportedPlugin
 }
 
+//From time.go
+const (
+	secondsPerMinute = 60
+	secondsPerHour   = 60 * secondsPerMinute
+	secondsPerDay    = 24 * secondsPerHour
+	secondsPerWeek   = 7 * secondsPerDay
+)
+
 //TODO: update this to reflect what a target should send
 type Target struct {
 	RefId           string
@@ -39,7 +47,6 @@ const (
 	FixedIntervalHour           = "hour"
 	FixedIntervalDay            = "day"
 	FixedIntervalWeek           = "week"
-	FixedIntervalMonth          = "month"
 	ScalyrQueryFacet            = "facet query"
 	ScalyrQueryNumerical        = "numeric query"
 	ScalyrQueryComplexNumerical = "complex numeric query"
@@ -117,15 +124,13 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 		switch target.ScalyrQueryType {
 		case ScalyrQueryNumerical:
 			//TODO: gonna need to call the remainder between bucketRequest.To and tsdbReq.TimeRange.EpochToMS on IntervalTypeFixed and then combine results if we want Fixed to work properly like with the proxy server
-			resp, err := svc.TimeSeriesQuery([]*scalyr.TimeseriesQuery{
-				{
-					Filter:    target.Filter,
-					Buckets:   buckets,
-					Function:  target.GraphFunction,
-					StartTime: strconv.FormatInt(bucketRequest.From, 10),
-					EndTime:   strconv.FormatInt(bucketRequest.To, 10),
-					Priority:  "low",
-				},
+			resp, err := svc.TimeSeriesQuery(&scalyr.TimeseriesQuery{
+				Filter:    target.Filter,
+				Buckets:   buckets,
+				Function:  target.GraphFunction,
+				StartTime: strconv.FormatInt(bucketRequest.From, 10),
+				EndTime:   strconv.FormatInt(bucketRequest.To, 10),
+				Priority:  "low",
 			})
 			if err != nil {
 				return nil, errors.Wrap(err, "Error returned on a numeric query")
@@ -136,7 +141,27 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 			}
 			response.Results = append(response.Results, r)
 		case ScalyrQueryComplexNumerical:
-			//resp, err := svc.ComplexTimeSeriesQuery()
+			resp, parts, err := svc.ComplexTimeSeriesQuery(&scalyr.TimeseriesQuery{
+				Filter:    target.Filter,
+				Buckets:   buckets,
+				Function:  target.GraphFunction,
+				StartTime: strconv.FormatInt(bucketRequest.From, 10),
+				EndTime:   strconv.FormatInt(bucketRequest.To, 10),
+				Priority:  "low",
+			})
+			if err != nil {
+				return nil, errors.Wrap(err, "Error returned on a complex numeric query")
+			}
+			r, err := parseTimeSeriesResponse(resp, target, bucketRequest)
+			if err != nil {
+				return nil, err
+			}
+			rawBytes, err := json.Marshal(parts)
+			if err != nil {
+				return nil, err
+			}
+			r.MetaJson = string(rawBytes)
+			response.Results = append(response.Results, r)
 		}
 	}
 
@@ -232,23 +257,27 @@ func (t *ScalyrDatasource) getSelectedInterval(trange *datasource.TimeRange, tar
 	}
 	start := time.Unix(trange.FromEpochMs/1000, (trange.FromEpochMs%1000)*int64(time.Millisecond))
 	end := time.Unix(trange.ToEpochMs/1000, (trange.ToEpochMs%1000)*int64(time.Millisecond))
-	seconds := 60 //default option for seconds in minute
+	seconds := secondsPerMinute //default option for seconds in minute
 	switch target.ChosenType {
 	case FixedIntervalMinute:
+		endMinute := end.UTC().Minute() + ((int(time.Minute) % secondsPerHour) / secondsPerMinute)
 		start = time.Date(start.UTC().Year(), start.UTC().Month(), start.UTC().Day(), start.UTC().Hour(), start.UTC().Minute(), 0, 0, start.UTC().Location())
-		end = time.Date(end.UTC().Year(), end.UTC().Month(), end.UTC().Day(), end.UTC().Hour(), end.UTC().Minute(), 0, 0, end.UTC().Location())
+		end = time.Date(end.UTC().Year(), end.UTC().Month(), end.UTC().Day(), end.UTC().Hour(), endMinute, 0, 0, end.UTC().Location())
 	case FixedIntervalHour:
+		endHour := end.UTC().Hour() + ((int(time.Hour) % secondsPerDay) / secondsPerHour)
 		start = time.Date(start.UTC().Year(), start.UTC().Month(), start.UTC().Day(), start.UTC().Hour(), 0, 0, 0, start.UTC().Location())
-		end = time.Date(end.UTC().Year(), end.UTC().Month(), end.UTC().Day(), end.UTC().Hour(), 0, 0, 0, end.UTC().Location())
-		seconds = 60 * 60
+		end = time.Date(end.UTC().Year(), end.UTC().Month(), end.UTC().Day(), endHour, 0, 0, 0, end.UTC().Location())
+		seconds = secondsPerHour
 	case FixedIntervalDay:
+		endDay := end.UTC().Day() + 1
 		start = time.Date(start.UTC().Year(), start.UTC().Month(), start.UTC().Day(), 0, 0, 0, 0, start.UTC().Location())
-		end = time.Date(end.UTC().Year(), end.UTC().Month(), end.UTC().Day(), 0, 0, 0, 0, end.UTC().Location())
-		seconds = 60 * 60 * 24
+		end = time.Date(end.UTC().Year(), end.UTC().Month(), endDay, 0, 0, 0, 0, end.UTC().Location())
+		seconds = secondsPerDay
 	case FixedIntervalWeek:
-		fallthrough
-	case FixedIntervalMonth:
-		return nil, errors.New(fmt.Sprintf("Selection '%s' Not yet implemented", target.ChosenType))
+		endDay := end.UTC().Day() + 7
+		start = time.Date(start.UTC().Year(), start.UTC().Month(), start.UTC().Day(), 0, 0, 0, 0, start.UTC().Location())
+		end = time.Date(end.UTC().Year(), end.UTC().Month(), endDay, 0, 0, 0, 0, end.UTC().Location())
+		seconds = secondsPerWeek
 	}
 
 	return &scalyr.BucketRequest{
@@ -256,21 +285,4 @@ func (t *ScalyrDatasource) getSelectedInterval(trange *datasource.TimeRange, tar
 		To:              end.Unix(),
 		IntervalSeconds: seconds,
 	}, nil
-}
-
-//Converts the alert request into the format expected by the proxy server
-func handleAlertRequest(tsdbReq *datasource.DatasourceRequest, jsonRequest map[string]interface{}) ([]byte, error) {
-	toPass := map[string]interface{}{
-		"targets": []interface{}{jsonRequest},
-		"range": map[string]interface{}{
-			"from": tsdbReq.TimeRange.FromEpochMs,
-			"to":   tsdbReq.TimeRange.ToEpochMs,
-		},
-	}
-	jsonToPass, err := json.Marshal(toPass)
-	if err != nil {
-		return nil, err
-	}
-
-	return jsonToPass, nil
 }

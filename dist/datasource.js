@@ -151,7 +151,7 @@ System.register(["lodash"], function (_export, _context) {
 
                         return this.doTsdbRequest(finalOptions).then(handleTsdbResponse).then(function (res) {
                             res.data.sort(function (a, b) {
-                                return refIdMap.indexOf(a.refId) > refIdMap.indexOf(b.refId);
+                                return refIdMap.indexOf(a.refId) - refIdMap.indexOf(b.refId);
                             });
                             _this.response = res;
                             var _iteratorNormalCompletion = true;
@@ -162,7 +162,9 @@ System.register(["lodash"], function (_export, _context) {
                                 for (var _iterator = _this.queryControls[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
                                     var queryControl = _step.value;
 
-                                    queryControl.getComplexParts();
+                                    if (queryControl.target.type === 'complex numeric query') {
+                                        queryControl.getComplexParts();
+                                    }
                                 }
                             } catch (err) {
                                 _didIteratorError = true;

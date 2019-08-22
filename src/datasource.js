@@ -106,11 +106,13 @@ export class ScalyrDatasource {
         return this.doTsdbRequest(finalOptions)
             .then(handleTsdbResponse).then((res) => {
                 res.data.sort((a, b) => {
-                    return refIdMap.indexOf(a.refId) > refIdMap.indexOf(b.refId);
+                    return refIdMap.indexOf(a.refId) - refIdMap.indexOf(b.refId);
                 });
                 this.response = res;
                 for (let queryControl of this.queryControls) {
-                    queryControl.getComplexParts();
+                    if (queryControl.target.type === 'complex numeric query') {
+                        queryControl.getComplexParts();
+                    }
                 }
                 return res;
             });

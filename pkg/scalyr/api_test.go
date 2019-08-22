@@ -38,7 +38,7 @@ func TestScalyr_TimeSeriesQuery(t *testing.T) {
 		client          http.Client
 	}
 	type args struct {
-		queries []TimeseriesQuery
+		query TimeseriesQuery
 	}
 
 	//set the defaults
@@ -65,15 +65,13 @@ func TestScalyr_TimeSeriesQuery(t *testing.T) {
 			name:   "Basic Test",
 			fields: defaultFields,
 			args: args{
-				queries: []TimeseriesQuery{
-					{
-						Filter:    fmt.Sprintf("$serverHost = '%s'", existingServerHost),
-						Buckets:   5,
-						Function:  "count",
-						StartTime: strconv.FormatInt(startTime, 10),
-						EndTime:   strconv.FormatInt(endTime, 10),
-						Priority:  "low",
-					},
+				query: TimeseriesQuery{
+					Filter:    fmt.Sprintf("$serverHost = '%s'", existingServerHost),
+					Buckets:   5,
+					Function:  "count",
+					StartTime: strconv.FormatInt(startTime, 10),
+					EndTime:   strconv.FormatInt(endTime, 10),
+					Priority:  "low",
 				},
 			},
 			want: &TimeseriesQueryResponse{
