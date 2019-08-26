@@ -96,7 +96,7 @@ func TestScalyr_TimeSeriesQuery(t *testing.T) {
 				readConfigToken: tt.fields.readConfigToken,
 				client:          tt.fields.client,
 			}
-			got, err := s.TimeSeriesQuery(tt.args.queries)
+			got, err := s.TimeSeriesQuery(&tt.args.query)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("TimeSeriesQuery() error = %v, wantErr %v", err, tt.wantErr)
 				return
