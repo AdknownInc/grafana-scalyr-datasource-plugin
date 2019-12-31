@@ -40,14 +40,24 @@
                             ng-options="f as f for f in ctrl.graphFunctions"></select>
                 </div>
             </div>
-            <div ng-if="ctrl.target.graphFunction != '' && ctrl.target.graphFunction != 'count' && ctrl.target.graphFunction != 'rate'">
-
-                <div class="gf-form">
+            <div ng-switch on="ctrl.target.graphFunction">
+                <div class="gf-form" ng-switch-when="mean|min|max|sumPerSecond|median|p10|p50|p90|p95|p99|p999|fraction" ng-switch-when-separator="|">
                     <label class="gf-form-label width-10">Expression</label>
                     <input class="input-small gf-form-input width-10" type="text"
                            ng-change="ctrl.onChangeInternal()"
                            ng-model="ctrl.target.expression">
                 </div>
+                <div class="gf-form" ng-switch-when="p(n)">
+                    <label class="gf-form-label width-10">Expression</label>
+                    <input class="input-small gf-form-input width-10" type="text"
+                           ng-change="ctrl.onChangeInternal()"
+                           ng-model="ctrl.target.expression">
+                    <label class="gf-form-label width-10">nth Percentile</label>
+                    <input class="input-small gf-form-input width-5" type="number"
+                           ng-change="ctrl.onChangeInternal()"
+                           ng-model="ctrl.target.n">
+                </div>
+
             </div>
         </div>
         <div class="gf-form-inline">

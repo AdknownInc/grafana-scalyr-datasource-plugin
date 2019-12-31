@@ -20,8 +20,8 @@
       "url": "https://adknown.com"
     },
     "logos": {
-      "small": "img/scalyr_logo.png",
-      "large": "img/scalyr_logo.png"
+      "small": "img/scalyr_logo_only.png",
+      "large": "img/scalyr_logo_only.png"
     },
     "keywords": [
       "Scalyr",

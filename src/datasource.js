@@ -1,7 +1,6 @@
 import _ from "lodash";
 
 export class ScalyrDatasource {
-
     constructor(instanceSettings, $q, backendSrv, templateSrv, timeSrv) {
         this.datasourceId = instanceSettings.id;
         this.type = instanceSettings.type;
@@ -67,6 +66,35 @@ export class ScalyrDatasource {
                 // noinspection JSUnfilteredForInLoop
                 this.templateSrv.index[variable].current.value = this.templateSrv.index[variable].current.value.reverse();
             }
+        }
+    }
+
+    /**
+     * Gets the function that Scalyr expects from the target expression
+     *
+     * @param target
+     * @returns {string|*}
+     */
+    getScalyrGraphFunction(target) {
+        switch(target.graphFunction) {
+            case "mean":
+            case "min":
+            case "max":
+            case "sumPerSecond":
+            case "median":
+            case "p10":
+            case "p50":
+            case "p90":
+            case "p95":
+            case "p99":
+            case "p999":
+            case "fraction":
+                return target.graphFunction + "(" + target.expression + ")";
+            case "p(n)":
+                return "p(" + target.expression + "," + target.n + ")";
+            case "count":
+            default:
+                return target.graphFunction
         }
     }
 
@@ -181,7 +209,7 @@ export class ScalyrDatasource {
                 chosenType: target.chosenType,
                 target: this.templateSrv.replace(target.target, options.scopedVars, 'regex'), //the name of the query
                 filter: target.filter, //the filter sent to scalyr
-                graphFunction: target.graphFunction, //the type of function that is needed on Scalyr's end
+                graphFunction: this.getScalyrGraphFunction(target), //the type of function that is needed on Scalyr's end
                 intervalType: target.intervalType,
                 secondsInterval: target.secondsInterval,
                 showQueryParts: target.showQueryParts

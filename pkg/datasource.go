@@ -8,6 +8,7 @@ import (
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana_plugin_model/go/datasource"
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
 	"sort"
@@ -17,6 +18,7 @@ import (
 
 type ScalyrDatasource struct {
 	plugin.NetRPCUnsupportedPlugin
+	logger hclog.Logger
 }
 
 //From time.go
@@ -59,6 +61,7 @@ type suggestData struct {
 
 func (t *ScalyrDatasource) Query(ctx context.Context, tsdbReq *datasource.DatasourceRequest) (*datasource.DatasourceResponse, error) {
 	modelJson, err := simplejson.NewJson([]byte(tsdbReq.Queries[0].ModelJson))
+	t.logger.Warn("I'm a logger in the scalyr query")
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +126,9 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 		}
 		switch target.ScalyrQueryType {
 		case ScalyrQueryNumerical:
+
 			//TODO: gonna need to call the remainder between bucketRequest.To and tsdbReq.TimeRange.EpochToMS on IntervalTypeFixed and then combine results if we want Fixed to work properly like with the proxy server
+			t.logger.Debug("Making Timeseries Query", "Filter", target.Filter)
 			resp, err := svc.TimeSeriesQuery(&scalyr.TimeseriesQuery{
 				Filter:    target.Filter,
 				Buckets:   buckets,
@@ -135,10 +140,12 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 			if err != nil {
 				return nil, errors.Wrap(err, "Error returned on a numeric query")
 			}
+			t.logger.Debug("Timeseries response received, parsing...", "Filter", target.Filter)
 			r, err := parseTimeSeriesResponse(resp, target, bucketRequest)
 			if err != nil {
 				return nil, err
 			}
+			t.logger.Debug("Timeseries response parsed, returning...", "Filter", target.Filter)
 			response.Results = append(response.Results, r)
 		case ScalyrQueryComplexNumerical:
 			resp, parts, err := svc.ComplexTimeSeriesQuery(&scalyr.TimeseriesQuery{

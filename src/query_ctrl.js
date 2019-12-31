@@ -13,7 +13,7 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
         this.target.secondsInterval = this.target.secondsInterval || 60;
         // this.target.interval = this.target.interval || 60;
         this.graphFunctions = [
-            'mean', 'min', 'max', 'sumPerSecond', 'median', 'p10', 'p50', '95', '99', '999', 'p(n)', 'fraction', '', 'rate', 'count'
+            'mean', 'min', 'max', 'sumPerSecond', 'median', 'p10', 'p50', 'p95', 'p99', 'p999', 'p(n)', 'fraction', 'rate', 'count'
         ];
         this.intervalTypes = [
             INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED
@@ -22,6 +22,8 @@ export class ScalyrDatasourceQueryCtrl extends QueryCtrl {
             'minute', 'hour', 'day', 'week'
         ];
         this.target.graphFunction = this.target.graphFunction || this.graphFunctions[0];
+        this.target.expression = this.target.expression || '';
+        this.target.n = this.target.n || 66;
         this.target.intervalType = this.target.intervalType || this.intervalTypes[0];
         this.target.chosenType = this.target.chosenType || this.supportedIntervalTypes[0];
         this.queryTypes = [

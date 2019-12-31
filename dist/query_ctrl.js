@@ -80,10 +80,12 @@ System.register(['app/plugins/sdk'], function (_export, _context) {
                     _this.target.filter = _this.target.filter || "";
                     _this.target.secondsInterval = _this.target.secondsInterval || 60;
                     // this.target.interval = this.target.interval || 60;
-                    _this.graphFunctions = ['mean', 'min', 'max', 'sumPerSecond', 'median', 'p10', 'p50', '95', '99', '999', 'p(n)', 'fraction', '', 'rate', 'count'];
+                    _this.graphFunctions = ['mean', 'min', 'max', 'sumPerSecond', 'median', 'p10', 'p50', 'p95', 'p99', 'p999', 'p(n)', 'fraction', 'rate', 'count'];
                     _this.intervalTypes = [INTERVAL_TYPE_WINDOW, INTERVAL_TYPE_FIXED];
                     _this.supportedIntervalTypes = ['minute', 'hour', 'day', 'week'];
                     _this.target.graphFunction = _this.target.graphFunction || _this.graphFunctions[0];
+                    _this.target.expression = _this.target.expression || '';
+                    _this.target.n = _this.target.n || 66;
                     _this.target.intervalType = _this.target.intervalType || _this.intervalTypes[0];
                     _this.target.chosenType = _this.target.chosenType || _this.supportedIntervalTypes[0];
                     _this.queryTypes = ['numeric query', 'facet query', 'complex numeric query'];

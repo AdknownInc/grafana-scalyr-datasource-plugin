@@ -70,7 +70,6 @@ func (s *Scalyr) TimeSeriesQuery(query *TimeseriesQuery) (*TimeseriesQueryRespon
 	if err != nil {
 		return nil, errors.Wrap(err, "Unable to json.Marshal the time series request being sent")
 	}
-	fmt.Println(string(payload))
 	req, err := http.NewRequest("POST", TimeseriesQueryURL, bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, errors.Wrap(err, "Received an error after creating the post request object")
@@ -149,7 +148,7 @@ func GetBuckets(data *BucketRequest) (int, error) {
 
 	buckets := timeframe / int64(data.IntervalSeconds)
 	if buckets > MaxBuckets {
-		return -1, errors.New(fmt.Sprintf("GetBuckets(): calculated buckets too large. Max allowed buckets is %d. Params: from (%v), to (%v), intervalSeconds (%v)", MaxBuckets, data.From, data.To, data.IntervalSeconds))
+		return -1, errors.New(fmt.Sprintf("GetBuckets(): calculated buckets too large. Timeframe / interval = buckets. %d seconds / %d seconds = %d buckets. Max allowed buckets is %d. Params: from (%v), to (%v)", timeframe, int64(data.IntervalSeconds), buckets, MaxBuckets, data.From, data.To))
 	}
 	return int(buckets), nil
 }
