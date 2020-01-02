@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/adknowninc/grafana-scalyr-datasource-plugin/pkg/scalyr"
 	"github.com/grafana/grafana/pkg/components/simplejson"
-	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana_plugin_model/go/datasource"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
@@ -29,7 +28,6 @@ const (
 	secondsPerWeek   = 7 * secondsPerDay
 )
 
-//TODO: update this to reflect what a target should send
 type Target struct {
 	RefId           string
 	QueryType       string //refers to the grafana query type
@@ -60,8 +58,8 @@ type suggestData struct {
 }
 
 func (t *ScalyrDatasource) Query(ctx context.Context, tsdbReq *datasource.DatasourceRequest) (*datasource.DatasourceResponse, error) {
+	t.logger.Debug("Query", "org", tsdbReq.Datasource.OrgId, "datasource", tsdbReq.Datasource.Name, "TimeRange", tsdbReq.TimeRange)
 	modelJson, err := simplejson.NewJson([]byte(tsdbReq.Queries[0].ModelJson))
-	t.logger.Warn("I'm a logger in the scalyr query")
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +139,7 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 				return nil, errors.Wrap(err, "Error returned on a numeric query")
 			}
 			t.logger.Debug("Timeseries response received, parsing...", "Filter", target.Filter)
-			r, err := parseTimeSeriesResponse(resp, target, bucketRequest)
+			r, err := t.parseTimeSeriesResponse(resp, target, bucketRequest)
 			if err != nil {
 				return nil, err
 			}
@@ -159,7 +157,7 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 			if err != nil {
 				return nil, errors.Wrap(err, "Error returned on a complex numeric query")
 			}
-			r, err := parseTimeSeriesResponse(resp, target, bucketRequest)
+			r, err := t.parseTimeSeriesResponse(resp, target, bucketRequest)
 			if err != nil {
 				return nil, err
 			}
@@ -175,7 +173,7 @@ func (t *ScalyrDatasource) handleQuery(tsdbReq *datasource.DatasourceRequest) (*
 	return response, nil
 }
 
-func parseTimeSeriesResponse(resp *scalyr.TimeseriesQueryResponse, target Target, bucketRequest *scalyr.BucketRequest) (*datasource.QueryResult, error) {
+func (t *ScalyrDatasource) parseTimeSeriesResponse(resp *scalyr.TimeseriesQueryResponse, target Target, bucketRequest *scalyr.BucketRequest) (*datasource.QueryResult, error) {
 	series := &datasource.TimeSeries{}
 	series.Name = target.Name
 	startTime := bucketRequest.From * 1000
@@ -189,7 +187,7 @@ func parseTimeSeriesResponse(resp *scalyr.TimeseriesQueryResponse, target Target
 				Value:     val,
 			})
 			if endTime > bucketRequest.To {
-				log.Warn("Set a datapoint to be outside the range of the end value. datapoint ts: %d, end value: %d", endTime, bucketRequest.To)
+				t.logger.Warn("Set a datapoint to be outside the range of the end value", "datapoint_ts", endTime, "end value", bucketRequest.To)
 			}
 			endTime += interval
 		}

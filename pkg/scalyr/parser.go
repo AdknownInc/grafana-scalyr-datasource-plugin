@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/golang-collections/collections/stack"
 	"github.com/golang-collections/go-datastructures/queue"
+	"github.com/pkg/errors"
 	"regexp"
 	"strconv"
 	"strings"
@@ -93,14 +94,8 @@ func ParseComplexExpression(expression string, start string, end string, buckets
 					matches[name] = submatch[i]
 				}
 			}
-			//log.Debug("matches: %s", strings.Join(matches, "|")) TODO: log the matches that were matched
 			filter := matches["filter"]
 			graphFunction := matches["function"]
-			//field := ""
-			//if _, ok := matches["field"]; ok {
-			//	field = matches["field"]
-			//}
-			//Get the type of query based of of keyword
 
 			varArray = append(varArray, &ParseVar{
 				Id:     replaceString,
@@ -144,7 +139,7 @@ func ParseComplexExpression(expression string, start string, end string, buckets
 //an array in reverse polish notation.
 //@see http://andreinc.net/2010/10/05/converting-infix-to-rpn-shunting-yard-algorithm/
 //@see https://en.wikipedia.org/wiki/Reverse_Polish_notation
-func convertInfixNotationToReversePolishNotation(inputExpressions []string) *queue.Queue {
+func convertInfixNotationToReversePolishNotation(inputExpressions []string) (*queue.Queue, error) {
 	curStack := stack.New()
 	output := queue.New(0)
 	var stackToken Token
@@ -160,7 +155,7 @@ func convertInfixNotationToReversePolishNotation(inputExpressions []string) *que
 				if precedenceCompare(token, curStack.Peek()) <= 0 {
 					err := output.Put(curStack.Pop())
 					if err != nil {
-						panic(err)
+						return nil, err
 					}
 					continue
 				}
@@ -174,7 +169,7 @@ func convertInfixNotationToReversePolishNotation(inputExpressions []string) *que
 				if token.Variable == ")" {
 					for curStack.Len() > 0 {
 						if i, ok := curStack.Peek().(Token); !ok {
-							panic(fmt.Sprintf("Non Token value found in stack: %v", curStack.Peek()))
+							return nil, errors.New(fmt.Sprintf("Non Token value found in stack: %v", curStack.Peek()))
 						} else {
 							stackToken = i
 						}
@@ -183,16 +178,14 @@ func convertInfixNotationToReversePolishNotation(inputExpressions []string) *que
 						}
 						err := output.Put(curStack.Pop())
 						if err != nil {
-							//TODO: pass up proper
-							panic(err)
+							return nil, err
 						}
 					}
 					curStack.Pop()
 				} else {
 					err := output.Put(token)
 					if err != nil {
-						//TODO: pass up proper
-						panic(err)
+						return nil, err
 					}
 				}
 			}
@@ -202,12 +195,11 @@ func convertInfixNotationToReversePolishNotation(inputExpressions []string) *que
 	for curStack.Len() > 0 {
 		err := output.Put(curStack.Pop())
 		if err != nil {
-			//TODO: pass up proper
-			panic(err)
+			return nil, err
 		}
 	}
 
-	return output
+	return output, nil
 }
 
 /**
@@ -279,14 +271,17 @@ func NewEvaluateExpression(expression string, varArray []*ParseVar) (*Timeseries
 		expression = strings.ReplaceAll(expression, str, "")
 	}
 
-	rpnExpression := convertInfixNotationToReversePolishNotation(strings.Split(expression, ""))
+	rpnExpression, err := convertInfixNotationToReversePolishNotation(strings.Split(expression, ""))
+	if err != nil {
+		return nil, errors.Wrap(err, "Err while evaluating an expression and trying to convert from infix notation to reverse polish notation")
+	}
 
 	curStack := stack.New()
 	var token Token
 	for !rpnExpression.Empty() {
 		queueEl, err := rpnExpression.Get(1)
 		if err != nil {
-			panic(err)
+			return nil, errors.Wrap(err, "Err while evaluating expression and trying to 'Get' on rpn expression quuee")
 		}
 		if val, ok := queueEl[0].(Token); !ok {
 			panic(err)

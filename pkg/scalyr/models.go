@@ -32,3 +32,21 @@ type TimeseriesQueryResult struct {
 	ExecutionTime       int       `json:"executionTime"`
 	FoundExistingSeries bool      `json:"foundExistingSeries"`
 }
+
+//url: https://www.scalyr.com/api/numericQuery
+type NumericQueryRequest struct {
+	Token     string `json:"token"`
+	QueryType string `json:"queryType"`
+	Filter    string `json:"filter"`
+	Function  string `json:"function"`
+	StartTime string `json:"startTime"`
+	EndTime   string `json:"endTime"`
+	Buckets   int    `json:"buckets"`
+	Priority  string `json:"priority"`
+}
+
+type NumericQueryResponse struct {
+	Status   string    `json:"status"`
+	Values   []float64 `json:"values"`
+	CpuUsage int       `json:"cpuUsage"`
+}

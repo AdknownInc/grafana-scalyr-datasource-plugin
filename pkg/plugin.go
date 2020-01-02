@@ -4,9 +4,10 @@ import (
 	"github.com/grafana/grafana_plugin_model/go/datasource"
 	"github.com/hashicorp/go-hclog"
 	plugin "github.com/hashicorp/go-plugin"
+	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"strings"
+	"runtime"
 )
 
 var appLogger = hclog.New(&hclog.LoggerOptions{
@@ -18,12 +19,11 @@ var appLogger = hclog.New(&hclog.LoggerOptions{
 })
 
 func main() {
-	//log.SetOutput(os.Stderr) // the plugin sends logs to the host process on strErr
-	logLevel := os.Getenv("GF_SCALYR_LOGGING_LEVEL")
-	if logLevel != "" {
-		logLevel = strings.ToUpper(logLevel)
-		//appLogger.SetLevel(hclog.LevelFromString(logLevel))
-	}
+	runtime.SetBlockProfileRate(1)
+
+	go func() {
+		http.ListenAndServe(":3010", nil)
+	}()
 
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: plugin.HandshakeConfig{
@@ -32,7 +32,7 @@ func main() {
 			MagicCookieValue: "datasource",
 		},
 		Plugins: map[string]plugin.Plugin{
-			"backend-datasource": &datasource.DatasourcePluginImpl{Plugin: &ScalyrDatasource{
+			"grafana-scalyr-datasource-plugin": &datasource.DatasourcePluginImpl{Plugin: &ScalyrDatasource{
 				logger: appLogger,
 			}},
 		},
